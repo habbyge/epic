@@ -57,18 +57,18 @@
 
 
 struct ctx {
-    void *load_addr;
-    void *dynstr;
-    void *dynsym;
+    void* load_addr;
+    void* dynstr;
+    void* dynsym;
     int nsyms;
     off_t bias;
 };
 
 extern "C" {
 
-static int fake_dlclose(void *handle) {
+static int fake_dlclose(void* handle) {
     if (handle) {
-        struct ctx *ctx = (struct ctx *) handle;
+        struct ctx* ctx = (struct ctx*) handle;
         if (ctx->dynsym) free(ctx->dynsym);    /* we're saving dynsym and dynstr */
         if (ctx->dynstr) free(ctx->dynstr);    /* from library file just in case */
         free(ctx);
@@ -77,16 +77,19 @@ static int fake_dlclose(void *handle) {
 }
 
 /* flags are ignored */
-static void *fake_dlopen_with_path(const char *libpath, int flags) {
-    FILE *maps;
+static void* fake_dlopen_with_path(const char* libpath, int flags) {
+    FILE* maps;
     char buff[256];
-    struct ctx *ctx = 0;
+    struct ctx* ctx = 0;
     off_t load_addr, size;
     int k, fd = -1, found = 0;
-    char *shoff;
-    Elf_Ehdr *elf = (Elf_Ehdr *) MAP_FAILED;
+    char* shoff;
+    Elf_Ehdr* elf = (Elf_Ehdr*) MAP_FAILED;
 
-#define fatal(fmt, args...) do { log_err(fmt,##args); goto err_exit; } while(0)
+#define fatal(fmt, args...) do {    \
+            log_err(fmt,##args);    \
+            goto err_exit;          \
+        } while(0)
 
     maps = fopen("/proc/self/maps", "r");
     if (!maps) fatal("failed to open maps");
@@ -111,30 +114,29 @@ static void *fake_dlopen_with_path(const char *libpath, int flags) {
     size = lseek(fd, 0, SEEK_END);
     if (size <= 0) fatal("lseek() failed for %s", libpath);
 
-    elf = (Elf_Ehdr *) mmap(0, size, PROT_READ, MAP_SHARED, fd, 0);
+    elf = (Elf_Ehdr*) mmap(0, size, PROT_READ, MAP_SHARED, fd, 0);
     close(fd);
     fd = -1;
 
     if (elf == MAP_FAILED) fatal("mmap() failed for %s", libpath);
 
-    ctx = (struct ctx *) calloc(1, sizeof(struct ctx));
+    ctx = (struct ctx*) calloc(1, sizeof(struct ctx));
     if (!ctx) fatal("no memory for %s", libpath);
 
-    ctx->load_addr = (void *) load_addr;
-    shoff = ((char *) elf) + elf->e_shoff;
+    ctx->load_addr = (void*) load_addr;
+    shoff = ((char*) elf) + elf->e_shoff;
 
     for (k = 0; k < elf->e_shnum; k++, shoff += elf->e_shentsize) {
 
-        Elf_Shdr *sh = (Elf_Shdr *) shoff;
+        Elf_Shdr* sh = (Elf_Shdr*) shoff;
         log_dbg("%s: k=%d shdr=%p type=%x", __func__, k, sh, sh->sh_type);
 
         switch (sh->sh_type) {
-
             case SHT_DYNSYM:
                 if (ctx->dynsym) fatal("%s: duplicate DYNSYM sections", libpath); /* .dynsym */
                 ctx->dynsym = malloc(sh->sh_size);
                 if (!ctx->dynsym) fatal("%s: no memory for .dynsym", libpath);
-                memcpy(ctx->dynsym, ((char *) elf) + sh->sh_offset, sh->sh_size);
+                memcpy(ctx->dynsym, ((char*) elf) + sh->sh_offset, sh->sh_size);
                 ctx->nsyms = (sh->sh_size / sizeof(Elf_Sym));
                 break;
 
@@ -142,7 +144,7 @@ static void *fake_dlopen_with_path(const char *libpath, int flags) {
                 if (ctx->dynstr) break;    /* .dynstr is guaranteed to be the first STRTAB */
                 ctx->dynstr = malloc(sh->sh_size);
                 if (!ctx->dynstr) fatal("%s: no memory for .dynstr", libpath);
-                memcpy(ctx->dynstr, ((char *) elf) + sh->sh_offset, sh->sh_size);
+                memcpy(ctx->dynstr, ((char*) elf) + sh->sh_offset, sh->sh_size);
                 break;
 
             case SHT_PROGBITS:
@@ -179,18 +181,18 @@ static const char *const kOdmLibDir = "/odm/lib64/";
 static const char *const kVendorLibDir = "/vendor/lib64/";
 static const char *const kApexLibDir = "/apex/com.android.runtime/lib64/";
 #else
-static const char *const kSystemLibDir = "/system/lib/";
-static const char *const kOdmLibDir = "/odm/lib/";
-static const char *const kVendorLibDir = "/vendor/lib/";
-static const char *const kApexLibDir = "/apex/com.android.runtime/lib/";
+static const char* const kSystemLibDir = "/system/lib/";
+static const char* const kOdmLibDir = "/odm/lib/";
+static const char* const kVendorLibDir = "/vendor/lib/";
+static const char* const kApexLibDir = "/apex/com.android.runtime/lib/";
 #endif
 
-static void *fake_dlopen(const char *filename, int flags) {
+static void* fake_dlopen(const char* filename, int flags) {
     if (strlen(filename) > 0 && filename[0] == '/') {
         return fake_dlopen_with_path(filename, flags);
     } else {
         char buf[512] = {0};
-        void *handle = NULL;
+        void* handle = NULL;
         //sysmtem
         strcpy(buf, kSystemLibDir);
         strcat(buf, filename);
@@ -230,17 +232,17 @@ static void *fake_dlopen(const char *filename, int flags) {
     }
 }
 
-static void *fake_dlsym(void *handle, const char *name) {
+static void* fake_dlsym(void* handle, const char* name) {
     int k;
-    struct ctx *ctx = (struct ctx *) handle;
-    Elf_Sym *sym = (Elf_Sym *) ctx->dynsym;
-    char *strings = (char *) ctx->dynstr;
+    struct ctx* ctx = (struct ctx*) handle;
+    Elf_Sym* sym = (Elf_Sym*) ctx->dynsym;
+    char* strings = (char*) ctx->dynstr;
 
     for (k = 0; k < ctx->nsyms; k++, sym++)
         if (strcmp(strings + sym->st_name, name) == 0) {
             /*  NB: sym->st_value is an offset into the section for relocatables,
             but a VMA for shared libs or exe files, so we have to subtract the bias */
-            void *ret = (char *) ctx->load_addr + sym->st_value - ctx->bias;
+            void* ret = (char*) ctx->load_addr + sym->st_value - ctx->bias;
             log_info("%s found at %p", name, ret);
             return ret;
         }
@@ -248,7 +250,7 @@ static void *fake_dlsym(void *handle, const char *name) {
 }
 
 
-static const char *fake_dlerror() {
+static const char* fake_dlerror() {
     return NULL;
 }
 
@@ -264,7 +266,7 @@ static int get_sdk_level() {
     return SDK_INT;
 }
 
-int dlclose_ex(void *handle) {
+int dlclose_ex(void* handle) {
     if (get_sdk_level() >= 24) {
         return fake_dlclose(handle);
     } else {
@@ -272,7 +274,7 @@ int dlclose_ex(void *handle) {
     }
 }
 
-void *dlopen_ex(const char *filename, int flags) {
+void* dlopen_ex(const char* filename, int flags) {
     log_info("dlopen: %s", filename);
     if (get_sdk_level() >= 24) {
         return fake_dlopen(filename, flags);
@@ -281,7 +283,7 @@ void *dlopen_ex(const char *filename, int flags) {
     }
 }
 
-void *dlsym_ex(void *handle, const char *symbol) {
+void* dlsym_ex(void* handle, const char* symbol) {
     if (get_sdk_level() >= 24) {
         return fake_dlsym(handle, symbol);
     } else {
@@ -289,7 +291,7 @@ void *dlsym_ex(void *handle, const char *symbol) {
     }
 }
 
-const char *dlerror_ex() {
+const char* dlerror_ex() {
     if (get_sdk_level() >= 24) {
         return fake_dlerror();
     } else {

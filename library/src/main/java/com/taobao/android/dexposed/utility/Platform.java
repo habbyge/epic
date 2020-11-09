@@ -27,7 +27,7 @@ public abstract class Platform {
     static {
         if (Runtime.is64Bit()) {
             PLATFORM_INTERNAL = new Platform64Bit();
-        }else {
+        } else {
             PLATFORM_INTERNAL = new Platform32Bit();
         }
     }

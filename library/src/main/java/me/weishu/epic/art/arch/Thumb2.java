@@ -28,7 +28,7 @@ public class Thumb2 extends ShellCode {
 
     @Override
     public byte[] createDirectJump(long targetAddress) {
-        byte[] instructions = new byte[] {
+        byte[] instructions = new byte[]{
                 (byte) 0xdf, (byte) 0xf8, 0x00, (byte) 0xf0,        // ldr pc, [pc]
                 0, 0, 0, 0
         };

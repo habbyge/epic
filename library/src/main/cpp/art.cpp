@@ -22,18 +22,18 @@
 void* getHeap(JNIEnv* env, int api) {
     JavaVM* javaVM;
     env->GetJavaVM(&javaVM);
-    JavaVMExt *javaVMExt = (JavaVMExt *) javaVM;
+    JavaVMExt* javaVMExt = (JavaVMExt*) javaVM;
 
-    void *runtime = javaVMExt->runtime;
+    void* runtime = javaVMExt->runtime;
     if (runtime == nullptr) {
         return nullptr;
     }
 
     if (api < 26) {
-        Runtime_7X *runtime7X = (Runtime_7X *) runtime;
+        Runtime_7X* runtime7X = (Runtime_7X*) runtime;
         return runtime7X->heap_;
     } else {
-        Runtime_8X *runtime8X = (Runtime_8X *) runtime;
+        Runtime_8X* runtime8X = (Runtime_8X*) runtime;
         LOGV("bootclasspath : %s", runtime8X->boot_class_path_string_.c_str());
         return runtime8X->heap_;
     }

@@ -187,6 +187,7 @@ public class ArtMethod {
 
     /**
      * make the constructor or method accessible
+     *
      * @param accessible accessible
      */
     public void setAccessible(boolean accessible) {
@@ -199,6 +200,7 @@ public class ArtMethod {
 
     /**
      * get the origin method's name
+     *
      * @return constructor name of method name
      */
     public String getName() {
@@ -220,6 +222,7 @@ public class ArtMethod {
     /**
      * Force compile the method to avoid interpreter mode.
      * This is only used above Android N
+     *
      * @return if compile success return true, otherwise false.
      */
     public boolean compile() {
@@ -232,12 +235,13 @@ public class ArtMethod {
 
     /**
      * invoke the origin method
+     *
      * @param receiver the receiver
-     * @param args origin method/constructor's parameters
+     * @param args     origin method/constructor's parameters
      * @return origin method's return value.
-     * @throws IllegalAccessException throw if no access, impossible.
+     * @throws IllegalAccessException    throw if no access, impossible.
      * @throws InvocationTargetException invoke target error.
-     * @throws InstantiationException throw when the constructor can not create instance.
+     * @throws InstantiationException    throw when the constructor can not create instance.
      */
     public Object invoke(Object receiver, Object... args) throws IllegalAccessException, InvocationTargetException, InstantiationException {
 
@@ -271,6 +275,7 @@ public class ArtMethod {
 
     /**
      * get the modifiers of origin method/constructor
+     *
      * @return the modifiers
      */
     public int getModifiers() {
@@ -283,6 +288,7 @@ public class ArtMethod {
 
     /**
      * get the parameter type of origin method/constructor
+     *
      * @return the parameter types.
      */
     public Class<?>[] getParameterTypes() {
@@ -295,6 +301,7 @@ public class ArtMethod {
 
     /**
      * get the return type of origin method/constructor
+     *
      * @return the return type, if it is a constructor, return Object.class
      */
     public Class<?> getReturnType() {
@@ -307,6 +314,7 @@ public class ArtMethod {
 
     /**
      * get the exception declared by the method/constructor
+     *
      * @return the array of declared exception.
      */
     public Class<?>[] getExceptionTypes() {
@@ -338,6 +346,7 @@ public class ArtMethod {
 
     /**
      * get the memory address of the inner constructor/method
+     *
      * @return the method address, in general, it was the pointer of art::mirror::ArtMethod
      */
     public long getAddress() {
@@ -346,6 +355,7 @@ public class ArtMethod {
 
     /**
      * get the unique identifier of the constructor/method
+     *
      * @return the method identifier
      */
     public String getIdentifier() {
@@ -383,6 +393,7 @@ public class ArtMethod {
 
     /**
      * The entry point of the quick compiled code.
+     *
      * @return the entry point.
      */
     public long getEntryPointFromQuickCompiledCode() {
@@ -417,6 +428,7 @@ public class ArtMethod {
 
     /**
      * The size of an art::mirror::ArtMethod, we use two rule method to measure the size
+     *
      * @return the size
      */
     public static int getArtMethodSize() {
@@ -440,6 +452,7 @@ public class ArtMethod {
     private void rule2() {
         Log.i(TAG, "do not inline me!!");
     }
+
     public static long getQuickToInterpreterBridge() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
             return -1L;
@@ -455,7 +468,8 @@ public class ArtMethod {
 
     /**
      * search Offset in memory
-     * @param base base address
+     *
+     * @param base  base address
      * @param range search range
      * @param value search value
      * @return the first address of value if found

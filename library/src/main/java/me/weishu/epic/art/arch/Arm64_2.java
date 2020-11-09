@@ -40,56 +40,56 @@ public class Arm64_2 extends ShellCode {
     @Override
     public byte[] createBridgeJump(long targetAddress, long targetEntry, long srcAddress, long structAddress) {
 
-        byte[] instructions = new byte[] {
+        byte[] instructions = new byte[]{
 
-                    /*
-                    ldr x17, 3f
-                    cmp x0, x17
-                    bne 5f
-                    ldr x0, 1f
-                    ldr x17, 4f
-                    mov x16, sp
-                    str x16, [x17, #0]
-                    str x2, [x17, #8]
-                    ldr x16, 3f
-                    str x16, [x17, #16]
-                    mov x2, x17
-                    ldr x17, 2f
-                    br x17
+                /*
+                ldr x17, 3f
+                cmp x0, x17
+                bne 5f
+                ldr x0, 1f
+                ldr x17, 4f
+                mov x16, sp
+                str x16, [x17, #0]
+                str x2, [x17, #8]
+                ldr x16, 3f
+                str x16, [x17, #16]
+                mov x2, x17
+                ldr x17, 2f
+                br x17
 
-                    1:
-                    .quad 0x0
-                    2:
-                    .quad 0x0
-                    3:
-                    .quad 0x0
-                    4:
-                    .quad 0x0
+                1:
+                .quad 0x0
+                2:
+                .quad 0x0
+                3:
+                .quad 0x0
+                4:
+                .quad 0x0
 
-                    5:
-                    mov x0, x17
+                5:
+                mov x0, x17
 
-                    */
-                    0x1f, 0x20, 0x03, (byte) 0xd5,         // nop
-                    0x31, 0x02, 0x00, 0x58,
-                    0x1f, 0x00, 0x11, (byte)0xeb,
-                    (byte)0x61, 0x02, 0x00, 0x54,
-                    (byte)0x40, 0x01, 0x00, 0x58,
-                    (byte)0xf1, 0x01, 0x00, 0x58,
-                    (byte)0xf0, 0x03, 0x00, (byte)0x91,
-                    (byte)0x30, 0x02, 0x00, (byte)0xf9,
-                    0x22, 0x06, 0x00, (byte)0xf9,
-                    0x30, 0x01, 0x00, (byte)0x58,
-                    (byte)0x30, 0x0a, 0x00, (byte)0xf9,
-                    (byte)0xe2, 0x03, 0x11, (byte)0xaa,
-                    (byte)0x91, 0x00, 0x00, 0x58,
-                    (byte)0x20, 0x02, 0x1f, (byte)0xd6,
+                */
+                0x1f, 0x20, 0x03, (byte) 0xd5,         // nop
+                0x31, 0x02, 0x00, 0x58,
+                0x1f, 0x00, 0x11, (byte) 0xeb,
+                (byte) 0x61, 0x02, 0x00, 0x54,
+                (byte) 0x40, 0x01, 0x00, 0x58,
+                (byte) 0xf1, 0x01, 0x00, 0x58,
+                (byte) 0xf0, 0x03, 0x00, (byte) 0x91,
+                (byte) 0x30, 0x02, 0x00, (byte) 0xf9,
+                0x22, 0x06, 0x00, (byte) 0xf9,
+                0x30, 0x01, 0x00, (byte) 0x58,
+                (byte) 0x30, 0x0a, 0x00, (byte) 0xf9,
+                (byte) 0xe2, 0x03, 0x11, (byte) 0xaa,
+                (byte) 0x91, 0x00, 0x00, 0x58,
+                (byte) 0x20, 0x02, 0x1f, (byte) 0xd6,
 
-                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // target_method_address
-                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // target_method_entry
-                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // source_method
-                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00  // struct
-            };
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // target_method_address
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // target_method_entry
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // source_method
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00  // struct
+        };
 
         writeLong(targetAddress, ByteOrder.LITTLE_ENDIAN, instructions,
                 instructions.length - 32);

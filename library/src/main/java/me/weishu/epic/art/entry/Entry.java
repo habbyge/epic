@@ -19,7 +19,6 @@ package me.weishu.epic.art.entry;
 import android.os.Build;
 import android.util.Pair;
 
-import de.robv.android.xposed.DexposedBridge;
 import com.taobao.android.dexposed.utility.Debug;
 import com.taobao.android.dexposed.utility.Logger;
 
@@ -30,6 +29,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import de.robv.android.xposed.DexposedBridge;
 import me.weishu.epic.art.Epic;
 import me.weishu.epic.art.EpicNative;
 
@@ -189,6 +189,7 @@ public class Entry {
 
     /**
      * construct the method arguments from register r1, r2, r3 and stack
+     *
      * @param r1 register r1 value
      * @param r2 register r2 value
      * @param r3 register r3 value

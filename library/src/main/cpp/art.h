@@ -53,13 +53,13 @@ struct Runtime_7X {
 
     std::string compiler_executable_;
     std::string patchoat_executable_;
-    std::vector<std::string> compiler_options_;
-    std::vector<std::string> image_compiler_options_;
+    std::vector <std::string> compiler_options_;
+    std::vector <std::string> image_compiler_options_;
     std::string image_location_;
 
     std::string boot_class_path_string_;
     std::string class_path_string_;
-    std::vector<std::string> properties_;
+    std::vector <std::string> properties_;
 
     // The default stack size for managed threads created by the runtime.
     size_t default_stack_size_;
@@ -93,13 +93,13 @@ struct Runtime_8X {
 
     std::string compiler_executable_;
     std::string patchoat_executable_;
-    std::vector<std::string> compiler_options_;
-    std::vector<std::string> image_compiler_options_;
+    std::vector <std::string> compiler_options_;
+    std::vector <std::string> image_compiler_options_;
     std::string image_location_;
 
     std::string boot_class_path_string_;
     std::string class_path_string_;
-    std::vector<std::string> properties_;
+    std::vector <std::string> properties_;
 
     std::list<void*> agents_;
     std::vector<void*> plugins_;
@@ -116,6 +116,6 @@ struct JavaVMExt {
     void* runtime;
 };
 
-void *getHeap(JNIEnv*, int);
+void* getHeap(JNIEnv*, int);
 
 #endif //EPIC_ART_H

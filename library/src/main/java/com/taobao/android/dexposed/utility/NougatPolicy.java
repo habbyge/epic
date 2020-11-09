@@ -12,9 +12,11 @@ public class NougatPolicy {
         static void i(String tag, String msg) {
             Log.i(tag, msg);
         }
+
         static void e(String tag, String msg) {
             Log.i(tag, msg);
         }
+
         static void e(String tag, String msg, Throwable e) {
             Log.i(tag, msg, e);
         }

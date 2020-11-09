@@ -121,93 +121,93 @@ class Offset {
             ART_QUICK_CODE_OFFSET.setLength(Offset.BitWidth.QWORD);
             ART_JNI_ENTRY_OFFSET.setLength(BitWidth.QWORD);
             switch (apiLevel) {
-                case Build.VERSION_CODES.Q:
-                case Build.VERSION_CODES.P:
-                    ART_QUICK_CODE_OFFSET.setOffset(32);
-                    ART_JNI_ENTRY_OFFSET.setOffset(24);
-                    ART_ACCESS_FLAG_OFFSET.setOffset(4);
-                    break;
-                case Build.VERSION_CODES.O_MR1:
-                case Build.VERSION_CODES.O:
-                    ART_QUICK_CODE_OFFSET.setOffset(40);
-                    ART_JNI_ENTRY_OFFSET.setOffset(32);
-                    ART_ACCESS_FLAG_OFFSET.setOffset(4);
-                    break;
-                case Build.VERSION_CODES.N_MR1:
-                case Build.VERSION_CODES.N:
-                    ART_QUICK_CODE_OFFSET.setOffset(48);
-                    ART_JNI_ENTRY_OFFSET.setOffset(40);
-                    ART_ACCESS_FLAG_OFFSET.setOffset(4);
-                    break;
-                case Build.VERSION_CODES.M:
-                    ART_QUICK_CODE_OFFSET.setOffset(48);
-                    ART_JNI_ENTRY_OFFSET.setOffset(40);
-                    ART_ACCESS_FLAG_OFFSET.setOffset(12);
-                    break;
-                case Build.VERSION_CODES.LOLLIPOP_MR1:
-                    ART_QUICK_CODE_OFFSET.setOffset(52);
-                    ART_JNI_ENTRY_OFFSET.setOffset(44);
-                    ART_ACCESS_FLAG_OFFSET.setOffset(20);
-                    break;
-                case Build.VERSION_CODES.LOLLIPOP:
-                    ART_QUICK_CODE_OFFSET.setOffset(40);
-                    ART_QUICK_CODE_OFFSET.setLength(BitWidth.QWORD);
-                    ART_JNI_ENTRY_OFFSET.setOffset(32);
-                    ART_JNI_ENTRY_OFFSET.setLength(BitWidth.QWORD);
-                    ART_ACCESS_FLAG_OFFSET.setOffset(56);
-                    break;
-                case Build.VERSION_CODES.KITKAT:
-                    ART_QUICK_CODE_OFFSET.setOffset(32);
-                    ART_ACCESS_FLAG_OFFSET.setOffset(28);
-                    break;
-                default:
-                    throw new RuntimeException("API LEVEL: " + apiLevel + " is not supported now : (");
+            case Build.VERSION_CODES.Q:
+            case Build.VERSION_CODES.P:
+                ART_QUICK_CODE_OFFSET.setOffset(32);
+                ART_JNI_ENTRY_OFFSET.setOffset(24);
+                ART_ACCESS_FLAG_OFFSET.setOffset(4);
+                break;
+            case Build.VERSION_CODES.O_MR1:
+            case Build.VERSION_CODES.O:
+                ART_QUICK_CODE_OFFSET.setOffset(40);
+                ART_JNI_ENTRY_OFFSET.setOffset(32);
+                ART_ACCESS_FLAG_OFFSET.setOffset(4);
+                break;
+            case Build.VERSION_CODES.N_MR1:
+            case Build.VERSION_CODES.N:
+                ART_QUICK_CODE_OFFSET.setOffset(48);
+                ART_JNI_ENTRY_OFFSET.setOffset(40);
+                ART_ACCESS_FLAG_OFFSET.setOffset(4);
+                break;
+            case Build.VERSION_CODES.M:
+                ART_QUICK_CODE_OFFSET.setOffset(48);
+                ART_JNI_ENTRY_OFFSET.setOffset(40);
+                ART_ACCESS_FLAG_OFFSET.setOffset(12);
+                break;
+            case Build.VERSION_CODES.LOLLIPOP_MR1:
+                ART_QUICK_CODE_OFFSET.setOffset(52);
+                ART_JNI_ENTRY_OFFSET.setOffset(44);
+                ART_ACCESS_FLAG_OFFSET.setOffset(20);
+                break;
+            case Build.VERSION_CODES.LOLLIPOP:
+                ART_QUICK_CODE_OFFSET.setOffset(40);
+                ART_QUICK_CODE_OFFSET.setLength(BitWidth.QWORD);
+                ART_JNI_ENTRY_OFFSET.setOffset(32);
+                ART_JNI_ENTRY_OFFSET.setLength(BitWidth.QWORD);
+                ART_ACCESS_FLAG_OFFSET.setOffset(56);
+                break;
+            case Build.VERSION_CODES.KITKAT:
+                ART_QUICK_CODE_OFFSET.setOffset(32);
+                ART_ACCESS_FLAG_OFFSET.setOffset(28);
+                break;
+            default:
+                throw new RuntimeException("API LEVEL: " + apiLevel + " is not supported now : (");
             }
         } else {
             ART_QUICK_CODE_OFFSET.setLength(Offset.BitWidth.DWORD);
             ART_JNI_ENTRY_OFFSET.setLength(BitWidth.DWORD);
             switch (apiLevel) {
-                case Build.VERSION_CODES.Q:
-                case Build.VERSION_CODES.P:
-                    ART_QUICK_CODE_OFFSET.setOffset(24);
-                    ART_JNI_ENTRY_OFFSET.setOffset(20);
-                    ART_ACCESS_FLAG_OFFSET.setOffset(4);
-                    break;
-                case Build.VERSION_CODES.O_MR1:
-                case Build.VERSION_CODES.O:
-                    ART_QUICK_CODE_OFFSET.setOffset(28);
-                    ART_JNI_ENTRY_OFFSET.setOffset(24);
-                    ART_ACCESS_FLAG_OFFSET.setOffset(4);
-                    break;
-                case Build.VERSION_CODES.N_MR1:
-                case Build.VERSION_CODES.N:
-                    ART_QUICK_CODE_OFFSET.setOffset(32);
-                    ART_JNI_ENTRY_OFFSET.setOffset(28);
-                    ART_ACCESS_FLAG_OFFSET.setOffset(4);
-                    break;
-                case Build.VERSION_CODES.M:
-                    ART_QUICK_CODE_OFFSET.setOffset(36);
-                    ART_JNI_ENTRY_OFFSET.setOffset(32);
-                    ART_ACCESS_FLAG_OFFSET.setOffset(12);
-                    break;
-                case Build.VERSION_CODES.LOLLIPOP_MR1:
-                    ART_QUICK_CODE_OFFSET.setOffset(44);
-                    ART_JNI_ENTRY_OFFSET.setOffset(40);
-                    ART_ACCESS_FLAG_OFFSET.setOffset(20);
-                    break;
-                case Build.VERSION_CODES.LOLLIPOP:
-                    ART_QUICK_CODE_OFFSET.setOffset(40);
-                    ART_QUICK_CODE_OFFSET.setLength(BitWidth.QWORD);
-                    ART_JNI_ENTRY_OFFSET.setOffset(32);
-                    ART_JNI_ENTRY_OFFSET.setLength(BitWidth.QWORD);
-                    ART_ACCESS_FLAG_OFFSET.setOffset(56);
-                    break;
-                case Build.VERSION_CODES.KITKAT:
-                    ART_QUICK_CODE_OFFSET.setOffset(32);
-                    ART_ACCESS_FLAG_OFFSET.setOffset(28);
-                    break;
-                default:
-                    throw new RuntimeException("API LEVEL: " + apiLevel + " is not supported now : (");
+            case Build.VERSION_CODES.Q:
+            case Build.VERSION_CODES.P:
+                ART_QUICK_CODE_OFFSET.setOffset(24);
+                ART_JNI_ENTRY_OFFSET.setOffset(20);
+                ART_ACCESS_FLAG_OFFSET.setOffset(4);
+                break;
+            case Build.VERSION_CODES.O_MR1:
+            case Build.VERSION_CODES.O:
+                ART_QUICK_CODE_OFFSET.setOffset(28);
+                ART_JNI_ENTRY_OFFSET.setOffset(24);
+                ART_ACCESS_FLAG_OFFSET.setOffset(4);
+                break;
+            case Build.VERSION_CODES.N_MR1:
+            case Build.VERSION_CODES.N:
+                ART_QUICK_CODE_OFFSET.setOffset(32);
+                ART_JNI_ENTRY_OFFSET.setOffset(28);
+                ART_ACCESS_FLAG_OFFSET.setOffset(4);
+                break;
+            case Build.VERSION_CODES.M:
+                ART_QUICK_CODE_OFFSET.setOffset(36);
+                ART_JNI_ENTRY_OFFSET.setOffset(32);
+                ART_ACCESS_FLAG_OFFSET.setOffset(12);
+                break;
+            case Build.VERSION_CODES.LOLLIPOP_MR1:
+                ART_QUICK_CODE_OFFSET.setOffset(44);
+                ART_JNI_ENTRY_OFFSET.setOffset(40);
+                ART_ACCESS_FLAG_OFFSET.setOffset(20);
+                break;
+            case Build.VERSION_CODES.LOLLIPOP:
+                ART_QUICK_CODE_OFFSET.setOffset(40);
+                ART_QUICK_CODE_OFFSET.setLength(BitWidth.QWORD);
+                ART_JNI_ENTRY_OFFSET.setOffset(32);
+                ART_JNI_ENTRY_OFFSET.setLength(BitWidth.QWORD);
+                ART_ACCESS_FLAG_OFFSET.setOffset(56);
+                break;
+            case Build.VERSION_CODES.KITKAT:
+                ART_QUICK_CODE_OFFSET.setOffset(32);
+                ART_ACCESS_FLAG_OFFSET.setOffset(28);
+                break;
+            default:
+                throw new RuntimeException("API LEVEL: " + apiLevel + " is not supported now : (");
             }
         }
         if (Debug.DEBUG) {

@@ -34,6 +34,7 @@ public final class EpicNative {
 
     private static final String TAG = "EpicNative";
     private static volatile boolean useUnsafe = false;
+
     static {
         try {
             System.loadLibrary("epic");
@@ -78,6 +79,7 @@ public final class EpicNative {
 
     /**
      * suspend all running thread momently
+     *
      * @return a handle to resume all thread, used by {@link #resumeAll(long)}
      */
     public static native long suspendAll();
@@ -85,6 +87,7 @@ public final class EpicNative {
     /**
      * resume all thread which are suspend by {@link #suspendAll()}
      * only work abobe Android N
+     *
      * @param cookie the cookie return by {@link #suspendAll()}
      */
     public static native void resumeAll(long cookie);
@@ -92,6 +95,7 @@ public final class EpicNative {
     /**
      * stop jit compiler in runtime.
      * Warning: Just for experiment Do not call this now!!!
+     *
      * @return cookie use by {@link #startJit(long)}
      */
     public static native long stopJit();
@@ -99,6 +103,7 @@ public final class EpicNative {
     /**
      * start jit compiler stop by {@link #stopJit()}
      * Warning: Just for experiment Do not call this now!!!
+     *
      * @param cookie the cookie return by {@link #stopJit()}
      */
     public static native void startJit(long cookie);
@@ -109,6 +114,7 @@ public final class EpicNative {
     /**
      * Disable the moving gc of runtime.
      * Warning: Just for experiment Do not call this now!!!
+     *
      * @param api the api level
      */
     public static native void disableMovingGc(int api);

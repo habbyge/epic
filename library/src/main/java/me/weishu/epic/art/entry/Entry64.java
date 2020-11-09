@@ -79,7 +79,7 @@ public class Entry64 {
 
     //region ---------------bridge---------------
     private static void voidBridge(long r1, long self, long struct, long x4, long x5, long x6, long x7) {
-         referenceBridge(r1, self, struct, x4, x5, x6, x7);
+        referenceBridge(r1, self, struct, x4, x5, x6, x7);
     }
 
     private static boolean booleanBridge(long r1, long self, long struct, long x4, long x5, long x6, long x7) {
@@ -275,6 +275,7 @@ public class Entry64 {
     }
 
     private static Map<Class<?>, String> bridgeMethodMap = new HashMap<>();
+
     static {
         Class<?>[] primitiveTypes = new Class[]{boolean.class, byte.class, char.class, short.class,
                 int.class, long.class, float.class, double.class};
