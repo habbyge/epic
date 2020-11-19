@@ -36,16 +36,13 @@
 
 #define JNIHOOK_CLASS "me/weishu/epic/art/EpicNative"
 
-jobject (* addWeakGloablReference)(JavaVM*, void*, void*) = nullptr;
+jobject (*addWeakGloablReference)(JavaVM*, void*, void*) = nullptr;
 
 void* (* jit_load_)(bool*) = nullptr;
-
 void* jit_compiler_handle_ = nullptr;
-
 bool (* jit_compile_method_)(void*, void*, void*, bool) = nullptr;
 
 typedef bool (* JIT_COMPILE_METHOD1)(void*, void*, void*, bool);
-
 typedef bool (* JIT_COMPILE_METHOD2)(void*, void*, void*, bool, bool); // Android Q
 
 void (* jit_unload_)(void*) = nullptr;
@@ -54,7 +51,6 @@ class ScopedSuspendAll {
 };
 
 void (* suspendAll)(ScopedSuspendAll*, char*) = nullptr;
-
 void (* resumeAll)(ScopedSuspendAll*) = nullptr;
 
 class ScopedJitSuspend {
@@ -90,21 +86,24 @@ void init_entries(JNIEnv* env) {
         // Android L, art::JavaVMExt::AddWeakGlobalReference(art::Thread*, art::mirror::Object*)
         void* handle = dlopen("libart.so", RTLD_LAZY | RTLD_GLOBAL);
         addWeakGloablReference = (jobject (*)(JavaVM*, void*, void*)) dlsym(handle,
-                                                                            "_ZN3art9JavaVMExt22AddWeakGlobalReferenceEPNS_6ThreadEPNS_6mirror6ObjectE");
+            "_ZN3art9JavaVMExt22AddWeakGlobalReferenceEPNS_6ThreadEPNS_6mirror6ObjectE");
     } else if (api_level < 24) {
         // Android M, art::JavaVMExt::AddWeakGlobalRef(art::Thread*, art::mirror::Object*)
         void* handle = dlopen("libart.so", RTLD_LAZY | RTLD_GLOBAL);
         addWeakGloablReference = (jobject (*)(JavaVM*, void*, void*)) dlsym(handle,
-                                                                            "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadEPNS_6mirror6ObjectE");
+            "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadEPNS_6mirror6ObjectE");
     } else {
         // Android N and O, Google disallow us use dlsym;
         void* handle = dlopen_ex("libart.so", RTLD_NOW);
         void* jit_lib = dlopen_ex("libart-compiler.so", RTLD_NOW);
         LOGV("fake dlopen install: %p", handle);
+
         const char* addWeakGloablReferenceSymbol = api_level <= 25
-                                                   ? "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadEPNS_6mirror6ObjectE"
-                                                   : "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadENS_6ObjPtrINS_6mirror6ObjectEEE";
-        addWeakGloablReference = (jobject (*)(JavaVM*, void*, void*)) dlsym_ex(handle, addWeakGloablReferenceSymbol);
+            ? "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadEPNS_6mirror6ObjectE"
+            : "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadENS_6ObjPtrINS_6mirror6ObjectEEE";
+
+        addWeakGloablReference = (jobject (*)(JavaVM*, void*, void*)) dlsym_ex(
+            handle, addWeakGloablReferenceSymbol);
 
         jit_compile_method_ = (bool (*)(void*, void*, void*, bool)) dlsym_ex(jit_lib, "jit_compile_method");
         jit_load_ = reinterpret_cast<void* (*)(bool*)>(dlsym_ex(jit_lib, "jit_load"));
@@ -112,9 +111,11 @@ void init_entries(JNIEnv* env) {
         jit_compiler_handle_ = (jit_load_)(&generate_debug_info);
         LOGV("jit compile_method: %p", jit_compile_method_);
 
-        suspendAll = reinterpret_cast<void (*)(ScopedSuspendAll*, char*)>(dlsym_ex(handle,
-                                                                                   "_ZN3art16ScopedSuspendAllC1EPKcb"));
-        resumeAll = reinterpret_cast<void (*)(ScopedSuspendAll*)>(dlsym_ex(handle, "_ZN3art16ScopedSuspendAllD1Ev"));
+        suspendAll = reinterpret_cast<void (*)(ScopedSuspendAll*, char*)>(dlsym_ex(
+            handle, "_ZN3art16ScopedSuspendAllC1EPKcb"));
+
+        resumeAll = reinterpret_cast<void (*)(ScopedSuspendAll*)>(dlsym_ex(
+            handle, "_ZN3art16ScopedSuspendAllD1Ev"));
 
         // Disable this now.
         // startJit = reinterpret_cast<void(*)(ScopedJitSuspend*)>(dlsym_ex(handle, "_ZN3art3jit16ScopedJitSuspendD1Ev"));
@@ -127,17 +128,22 @@ void init_entries(JNIEnv* env) {
 }
 
 jboolean epic_compile(JNIEnv* env, jclass, jobject method, jlong self) {
-    LOGV("self from native peer: %p, from register: %p", reinterpret_cast<void*>(self), __self());
+
+    LOGV("self from native peer: %p, from register: %p", 
+            reinterpret_cast<void*>(self), __self());
+
     jlong art_method = (jlong) env->FromReflectedMethod(method);
     bool ret;
     if (api_level >= 29) {
         ret = ((JIT_COMPILE_METHOD2) jit_compile_method_)(jit_compiler_handle_,
                                                           reinterpret_cast<void*>(art_method),
-                                                          reinterpret_cast<void*>(self), false, false);
+                                                          reinterpret_cast<void*>(self), 
+                                                          false, false);
     } else {
         ret = ((JIT_COMPILE_METHOD1) jit_compile_method_)(jit_compiler_handle_,
                                                           reinterpret_cast<void*>(art_method),
-                                                          reinterpret_cast<void*>(self), false);
+                                                          reinterpret_cast<void*>(self), 
+                                                          false);
     }
     return (jboolean) ret;
 }
@@ -208,7 +214,6 @@ void epic_memcpy(JNIEnv* env, jclass, jlong src, jlong dest, jint length) {
 }
 
 void epic_memput(JNIEnv* env, jclass, jbyteArray src, jlong dest) {
-
     jbyte* srcPnt = env->GetByteArrayElements(src, 0);
     jsize length = env->GetArrayLength(src);
     unsigned char* destPnt = (unsigned char*) dest;
@@ -278,7 +283,8 @@ jboolean epic_isGetObjectAvaliable(JNIEnv*, jclass) {
     return (jboolean)(addWeakGloablReference != nullptr);
 }
 
-jboolean epic_activate(JNIEnv* env, jclass jclazz, jlong jumpToAddress, jlong pc, jlong sizeOfDirectJump,
+jboolean epic_activate(JNIEnv* env, jclass jclazz, jlong jumpToAddress, 
+                       jlong pc, jlong sizeOfDirectJump,
                        jlong sizeOfBridgeJump, jbyteArray code) {
 
     // fetch the array, we can not call this when thread suspend(may lead deadlock)
@@ -292,8 +298,8 @@ jboolean epic_activate(JNIEnv* env, jclass jclazz, jlong jumpToAddress, jlong pc
         // 1. modify the code mprotect
         // 2. modify the code
 
-        // Ideal, this two operation must be atomic. Below N, this is safe, because no one
-        // modify the code except ourselves;
+        // Ideal, this two operation must be atomic. Below N, this is safe, 
+        // because no one modify the code except ourselves;
         // But in Android N, When the jit is working, between our step 1 and step 2,
         // if we modity the mprotect of the code, and planning to write the code,
         // the jit thread may modify the mprotect of the code meanwhile

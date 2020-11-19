@@ -55,7 +55,6 @@
 #define Elf_Sym  Elf32_Sym
 #endif
 
-
 struct ctx {
     void* load_addr;
     void* dynstr;
@@ -92,27 +91,38 @@ static void* fake_dlopen_with_path(const char* libpath, int flags) {
         } while(0)
 
     maps = fopen("/proc/self/maps", "r");
-    if (!maps) fatal("failed to open maps");
+    if (!maps) {
+        fatal("failed to open maps");
+    }
 
     while (!found && fgets(buff, sizeof(buff), maps)) {
-        if (strstr(buff, libpath) && (strstr(buff, "r-xp") || strstr(buff, "r--p"))) found = 1;
+        if (strstr(buff, libpath) && (strstr(buff, "r-xp") || strstr(buff, "r--p"))) {
+            found = 1;
+        }
     }
     fclose(maps);
 
-    if (!found) fatal("%s not found in my userspace", libpath);
+    if (!found) {
+        fatal("%s not found in my userspace", libpath);
+    }
 
-    if (sscanf(buff, "%lx", &load_addr) != 1)
+    if (sscanf(buff, "%lx", &load_addr) != 1) {
         fatal("failed to read load address for %s", libpath);
+    }
 
     log_info("%s loaded in Android at 0x%08lx", libpath, load_addr);
 
     /* Now, mmap the same library once again */
 
     fd = open(libpath, O_RDONLY);
-    if (fd < 0) fatal("failed to open %s", libpath);
+    if (fd < 0) {
+        fatal("failed to open %s", libpath);
+    }
 
     size = lseek(fd, 0, SEEK_END);
-    if (size <= 0) fatal("lseek() failed for %s", libpath);
+    if (size <= 0) {
+        fatal("lseek() failed for %s", libpath);
+    }
 
     elf = (Elf_Ehdr*) mmap(0, size, PROT_READ, MAP_SHARED, fd, 0);
     close(fd);
@@ -127,39 +137,44 @@ static void* fake_dlopen_with_path(const char* libpath, int flags) {
     shoff = ((char*) elf) + elf->e_shoff;
 
     for (k = 0; k < elf->e_shnum; k++, shoff += elf->e_shentsize) {
-
         Elf_Shdr* sh = (Elf_Shdr*) shoff;
         log_dbg("%s: k=%d shdr=%p type=%x", __func__, k, sh, sh->sh_type);
 
         switch (sh->sh_type) {
-            case SHT_DYNSYM:
-                if (ctx->dynsym) fatal("%s: duplicate DYNSYM sections", libpath); /* .dynsym */
-                ctx->dynsym = malloc(sh->sh_size);
-                if (!ctx->dynsym) fatal("%s: no memory for .dynsym", libpath);
-                memcpy(ctx->dynsym, ((char*) elf) + sh->sh_offset, sh->sh_size);
-                ctx->nsyms = (sh->sh_size / sizeof(Elf_Sym));
-                break;
+        case SHT_DYNSYM:
+            if (ctx->dynsym) {
+                fatal("%s: duplicate DYNSYM sections", libpath); /* .dynsym */
+            }
+            ctx->dynsym = malloc(sh->sh_size);
+            if (!ctx->dynsym) {
+                fatal("%s: no memory for .dynsym", libpath);
+            }
+            memcpy(ctx->dynsym, ((char*) elf) + sh->sh_offset, sh->sh_size);
+            ctx->nsyms = (sh->sh_size / sizeof(Elf_Sym));
+            break;
 
-            case SHT_STRTAB:
-                if (ctx->dynstr) break;    /* .dynstr is guaranteed to be the first STRTAB */
-                ctx->dynstr = malloc(sh->sh_size);
-                if (!ctx->dynstr) fatal("%s: no memory for .dynstr", libpath);
-                memcpy(ctx->dynstr, ((char*) elf) + sh->sh_offset, sh->sh_size);
-                break;
+        case SHT_STRTAB:
+            if (ctx->dynstr) break;    /* .dynstr is guaranteed to be the first STRTAB */
+            ctx->dynstr = malloc(sh->sh_size);
+            if (!ctx->dynstr) fatal("%s: no memory for .dynstr", libpath);
+            memcpy(ctx->dynstr, ((char*) elf) + sh->sh_offset, sh->sh_size);
+            break;
 
-            case SHT_PROGBITS:
-                if (!ctx->dynstr || !ctx->dynsym) break;
-                /* won't even bother checking against the section name */
-                ctx->bias = (off_t) sh->sh_addr - (off_t) sh->sh_offset;
-                k = elf->e_shnum;  /* exit for */
-                break;
+        case SHT_PROGBITS:
+            if (!ctx->dynstr || !ctx->dynsym) break;
+            /* won't even bother checking against the section name */
+            ctx->bias = (off_t) sh->sh_addr - (off_t) sh->sh_offset;
+            k = elf->e_shnum;  /* exit for */
+            break;
         }
     }
 
     munmap(elf, size);
     elf = 0;
 
-    if (!ctx->dynstr || !ctx->dynsym) fatal("dynamic sections not found in %s", libpath);
+    if (!ctx->dynstr || !ctx->dynsym) {
+        fatal("dynamic sections not found in %s", libpath);
+    }
 
 #undef fatal
 
@@ -176,15 +191,15 @@ static void* fake_dlopen_with_path(const char* libpath, int flags) {
 
 
 #if defined(__LP64__)
-static const char *const kSystemLibDir = "/system/lib64/";
-static const char *const kOdmLibDir = "/odm/lib64/";
-static const char *const kVendorLibDir = "/vendor/lib64/";
-static const char *const kApexLibDir = "/apex/com.android.runtime/lib64/";
+    static const char *const kSystemLibDir = "/system/lib64/";
+    static const char *const kOdmLibDir = "/odm/lib64/";
+    static const char *const kVendorLibDir = "/vendor/lib64/";
+    static const char *const kApexLibDir = "/apex/com.android.runtime/lib64/";
 #else
-static const char* const kSystemLibDir = "/system/lib/";
-static const char* const kOdmLibDir = "/odm/lib/";
-static const char* const kVendorLibDir = "/vendor/lib/";
-static const char* const kApexLibDir = "/apex/com.android.runtime/lib/";
+    static const char* const kSystemLibDir = "/system/lib/";
+    static const char* const kOdmLibDir = "/odm/lib/";
+    static const char* const kVendorLibDir = "/vendor/lib/";
+    static const char* const kApexLibDir = "/apex/com.android.runtime/lib/";
 #endif
 
 static void* fake_dlopen(const char* filename, int flags) {
