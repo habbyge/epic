@@ -69,7 +69,6 @@ struct Runtime_7X {
 };
 
 struct Runtime_8X {
-
     uint64_t callee_save_methods_[3];
     void* pre_allocated_OutOfMemoryError_;
     void* pre_allocated_NoClassDefFoundError_;
