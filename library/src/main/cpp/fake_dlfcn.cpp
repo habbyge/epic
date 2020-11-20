@@ -99,7 +99,8 @@ static int fake_dlclose(void* handle) {
 }
 
 /** 
- * flags are ignored 
+ * 缺点: flags are ignored
+ * 
  * API>=24的Android系统，Goole限制不能使用dl库，那么可以通过 /proc/pid/maps 文件，
  * 来查找到对应so库文件，被加载到该进程中的基地址，从而把该文件使用mmap()映射到内存中，
  * 再进行解析，获取so库(ELF)中的符号表类型的节、字符串类型的节，打包成 struct ctx 返回
@@ -330,7 +331,9 @@ static void* fake_dlopen(const char* filename, int flags) {
 }
 
 /**
- * 从 符号表(节) 中获取 name 指定的符号
+ * 从 符号表(节) 中获取 name 指定的符号，这里需要注意的是：
+ * 1. 符号表中的 sym->st_name 字段不是一个字符串名称，而是一个index，该位置对应的就是符号名称.
+ * 2. sym->st_value 字段表示的是该字符对应的地址偏移.
  */
 static void* fake_dlsym(void* handle, const char* name) {
     int i;

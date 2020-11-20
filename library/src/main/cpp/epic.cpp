@@ -137,8 +137,7 @@ void init_entries(JNIEnv* env) {
         // Android N and O, Google disallow us use dlsym(google不允许使用dlsym()函数了)
         void* handle = dlopen_ex("libart.so", RTLD_NOW); 
         void* jit_lib = dlopen_ex("libart-compiler.so", RTLD_NOW);
-        // TODO: continue......
-
+        
         LOGV("fake dlopen install: %p", handle);
 
         const char* addWeakGloablReferenceSymbol = api_level <= 25 ? 
@@ -148,7 +147,7 @@ void init_entries(JNIEnv* env) {
         addWeakGloablReference = (jobject (*)(JavaVM*, void*, void*)) dlsym_ex(
                 handle, addWeakGloablReferenceSymbol);
 
-        jit_compile_method_ = (bool(*)(void*, void*, void*, bool)) dlsym_ex(
+        jit_compile_method_ = (bool (*)(void*, void*, void*, bool)) dlsym_ex(
                 jit_lib, "jit_compile_method");
 
         jit_load_ = reinterpret_cast<void* (*)(bool*)>(dlsym_ex(jit_lib, "jit_load"));
@@ -225,7 +224,7 @@ void epic_disableMovingGc(JNIEnv* env, jclass, jint api) {
 }
 
 jboolean epic_munprotect(JNIEnv* env, jclass, jlong addr, jlong len) {
-    long pagesize = sysconf(_SC_PAGESIZE);
+    long pagesize = sysconf(_SC_PAGESIZE); // 页大小
     unsigned alignment = (unsigned) ((unsigned long long) addr % pagesize);
     LOGV("munprotect page size: %d, alignment: %d", pagesize, alignment);
 
@@ -238,6 +237,7 @@ jboolean epic_munprotect(JNIEnv* env, jclass, jlong addr, jlong len) {
     return JNI_TRUE;
 }
 
+// TODO: ing......
 jboolean epic_cacheflush(JNIEnv* env, jclass, jlong addr, jlong len) {
 #if defined(__arm__)
     int i = cacheflush(addr, addr + len, 0);
