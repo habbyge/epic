@@ -73,9 +73,12 @@
  */ 
 struct ctx {
     void* load_addr; // so库文件加载到进程中的基地址，来自 /proc/pid/maps
+    
     void* dynstr;    // 名称字符串表
+
     void* dynsym;    // 符号表
-    int nsyms;       // 符号表中成员符号item条数
+    int nsyms;       // 符号表中的符号item条数
+    
     off_t bias;      // 是节头表在进程地址空间中的基地址 TODO: 这个字段是啥?
 };
 
@@ -192,7 +195,7 @@ static void* fake_dlopen_with_path(const char* libpath, int flags) {
         fatal("no memory for %s", libpath);
     }
 
-    ctx->load_addr = (void*) load_addr; // so库加载到该进程中的基地址
+    ctx->load_addr = (void*) load_addr;   // so库加载到该进程中的基地址
     shoff = ((char*) elf) + elf->e_shoff; // 节头表偏移量
 
     // 遍历节头表(Section Header Table)
@@ -201,7 +204,7 @@ static void* fake_dlopen_with_path(const char* libpath, int flags) {
         log_dbg("%s: i=%d shdr=%p type=%x", __func__, i, sh, sh->sh_type);
 
         switch (sh->sh_type) {
-        case SHT_DYNSYM: { // 符号表
+        case SHT_DYNSYM: { // 符号表 .dynsym
             if (ctx->dynsym) {
                 fatal("%s: duplicate DYNSYM sections", libpath); /* .dynsym */
             }
@@ -214,7 +217,7 @@ static void* fake_dlopen_with_path(const char* libpath, int flags) {
         }
         break;
 
-        case SHT_STRTAB: { // 字符串(名字)表
+        case SHT_STRTAB: { // 字符串(名字)表 .dynstr
             if (ctx->dynstr) {
                 break;    /* .dynstr is guaranteed to be the first STRTAB */
             }
@@ -232,6 +235,8 @@ static void* fake_dlopen_with_path(const char* libpath, int flags) {
             }
             // won't even bother checking against the section name
             // ctx->bias 是节头表在进程地址空间中的基地址
+            // sh_addr: 该节在ELF文件被加载到进程地址空间中后的偏移量，其在进程中的真实地址是:
+            // load_addr+sh->sh_addr，
             ctx->bias = (off_t) sh->sh_addr - (off_t) sh->sh_offset;
             i = elf->e_shnum;  /* exit for */
         }
