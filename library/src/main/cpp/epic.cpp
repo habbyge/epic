@@ -16,6 +16,12 @@
  */
 
 /**
+ * Android本身是裁减过的Linux，好些system call不能使用，另外由于没有采用glibc（用的是Bionic libc).
+ * 好些函数所在的头文件位置也有变化，这都给移植工作带来困难。更为坑爹的是一些函数在头文件里能找到定义在
+ * 具体库里确没有实现（比如：pthread_mutex_timedlock）. Android Native开发在编译链接阶段会遇到
+ * 上述“惨痛”经历，但更为痛苦的是好不容易变成可执行文件，一运行就Crash没有任何信息。遇到这种情况，在
+ * 排除了代码有低级错误的情况后，最终只能想办法做debug.
+ * 
  * http://weishu.me/2017/11/23/dexposed-on-art/
  * 
  * ART有什么特别的？
@@ -60,9 +66,7 @@
 jobject (*addWeakGloablReference)(JavaVM*, void*, void*) = nullptr;
 
 void* (*jit_load_)(bool*) = nullptr;
-
 void* jit_compiler_handle_ = nullptr;
-
 bool (*jit_compile_method_)(void*, void*, void*, bool) = nullptr;
 
 typedef bool (*JIT_COMPILE_METHOD1)(void*, void*, void*, bool);
@@ -74,14 +78,12 @@ class ScopedSuspendAll {
 };
 
 void (*suspendAll)(ScopedSuspendAll*, char*) = nullptr;
-
 void (*resumeAll)(ScopedSuspendAll*) = nullptr;
 
 class ScopedJitSuspend {
 };
 
 void (*startJit)(ScopedJitSuspend*) = nullptr;
-
 void (*stopJit)(ScopedJitSuspend*) = nullptr;
 
 void (*DisableMovingGc)(void*) = nullptr;
@@ -106,6 +108,9 @@ static int api_level;
  * 偏移处，然后直接调用改地址的函数符号，并传参即可。
  */
 void init_entries(JNIEnv* env) {
+
+    // 获取Android系统 SDK 版本：adb shell getprop ro.build.version.release 我的机器上返回: 10
+    // 获取Android系统 API 版本：adb shell getprop ro.build.version.sdk 我的机器上返回：29
     char api_level_str[5];
     __system_property_get("ro.build.version.sdk", api_level_str);
 
@@ -113,21 +118,27 @@ void init_entries(JNIEnv* env) {
     LOGV("api level: %d", api_level);
     
     if (api_level < 23) {
+        // RTLD_LAZY: 在dlopen()返回前，对于动态库中存在的未定义的变量(如外部变量extern，也可以是函数)不
+        // 执行解析，就是不解析这个变量的地址。
+        // RTLD_NOW：与上面不同，他需要在dlopen返回前，解析出每个未定义变量的地址，如果解析不出来，在dlopen
+        // 会返回NULL，错误为: undefined symbol: xxxx.......
+        // RTLD_GLOBAL: 它的含义是使得so库中的解析的定义变量在随后的其它的链接库中变得可以使用。
+
         // Android L, art::JavaVMExt::AddWeakGlobalReference(art::Thread*, art::mirror::Object*)
         void* handle = dlopen("libart.so", RTLD_LAZY | RTLD_GLOBAL);
         addWeakGloablReference = (jobject (*)(JavaVM*, void*, void*)) dlsym(handle, 
             "_ZN3art9JavaVMExt22AddWeakGlobalReferenceEPNS_6ThreadEPNS_6mirror6ObjectE");
-
     } else if (api_level < 24) {
         // Android M, art::JavaVMExt::AddWeakGlobalRef(art::Thread*, art::mirror::Object*)
         void* handle = dlopen("libart.so", RTLD_LAZY | RTLD_GLOBAL);
         addWeakGloablReference = (jobject (*)(JavaVM*, void*, void*)) dlsym(handle, 
-            "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadEPNS_6mirror6ObjectE");
+                "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadEPNS_6mirror6ObjectE");
     } else {
         // Android N and O, Google disallow us use dlsym(google不允许使用dlsym()函数了)
-        void* handle = dlopen_ex("libart.so", RTLD_NOW);
+        void* handle = dlopen_ex("libart.so", RTLD_NOW); 
         void* jit_lib = dlopen_ex("libart-compiler.so", RTLD_NOW);
-        
+        // TODO: continue......
+
         LOGV("fake dlopen install: %p", handle);
 
         const char* addWeakGloablReferenceSymbol = api_level <= 25 ? 
@@ -135,17 +146,17 @@ void init_entries(JNIEnv* env) {
             "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadENS_6ObjPtrINS_6mirror6ObjectEEE";
 
         addWeakGloablReference = (jobject (*)(JavaVM*, void*, void*)) dlsym_ex(
-            handle, addWeakGloablReferenceSymbol);
+                handle, addWeakGloablReferenceSymbol);
 
         jit_compile_method_ = (bool(*)(void*, void*, void*, bool)) dlsym_ex(
-            jit_lib, "jit_compile_method");
+                jit_lib, "jit_compile_method");
 
         jit_load_ = reinterpret_cast<void* (*)(bool*)>(dlsym_ex(jit_lib, "jit_load"));
         bool generate_debug_info = false;
         jit_compiler_handle_ = (jit_load_)(&generate_debug_info);
         LOGV("jit compile_method: %p", jit_compile_method_);
 
-        suspendAll = reinterpret_cast<void (*)(ScopedSuspendAll*, char*)>(dlsym_ex(
+        suspendAll = reinterpret_cast<void(*)(ScopedSuspendAll*, char*)>(dlsym_ex(
                 handle, "_ZN3art16ScopedSuspendAllC1EPKcb"));
 
         resumeAll = reinterpret_cast<void (*)(ScopedSuspendAll*)>(dlsym_ex(
@@ -189,7 +200,7 @@ jboolean epic_compile(JNIEnv* env, jclass, jobject method, jlong self) {
 jlong epic_suspendAll(JNIEnv*, jclass) {
     ScopedSuspendAll* scopedSuspendAll = (ScopedSuspendAll*) malloc(sizeof(ScopedSuspendAll));
     suspendAll(scopedSuspendAll, "stop_jit");
-    return reinterpret_cast<jlong >(scopedSuspendAll);
+    return reinterpret_cast<jlong>(scopedSuspendAll);
 }
 
 void epic_resumeAll(JNIEnv* env, jclass, jlong obj) {
