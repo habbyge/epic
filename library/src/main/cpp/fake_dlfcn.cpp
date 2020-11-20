@@ -70,23 +70,23 @@
 
 /**
  * 加载 Elf 文件到mmap后，解析后的结果
- */ 
-struct ctx {
+ */
+typedef struct ctx {
     void* load_addr; // so库文件加载到进程中的基地址，来自 /proc/pid/maps
     
-    void* dynstr;    // 名称字符串表
+    void* dynstr;    // 名称字符串表(Section)
 
-    void* dynsym;    // 符号表
+    void* dynsym;    // 符号表(Section)
     int nsyms;       // 符号表中的符号item条数
     
     off_t bias;      // 是节头表在进程地址空间中的基地址 TODO: 这个字段是啥?
-};
+} ctx_t;
 
 extern "C" {
 
 static int fake_dlclose(void* handle) {
     if (handle) {
-        struct ctx* ctx = (struct ctx*) handle;
+        ctx_t* ctx = (ctx_t*) handle;
         if (ctx->dynsym) {
             free(ctx->dynsym);    /* we're saving dynsym and dynstr */
         }
@@ -100,13 +100,14 @@ static int fake_dlclose(void* handle) {
 
 /** 
  * flags are ignored 
- * API>=24的Android系统，不能使用dl库，那么可以通过 /proc/pid/maps中查找到对应so库
- * 加载到该进程中的基地址.
+ * API>=24的Android系统，Goole限制不能使用dl库，那么可以通过 /proc/pid/maps 文件，
+ * 来查找到对应so库文件，被加载到该进程中的基地址，从而把该文件使用mmap()映射到内存中，
+ * 再进行解析，获取so库(ELF)中的符号表类型的节、字符串类型的节，打包成 struct ctx 返回
  */
 static void* fake_dlopen_with_path(const char* libpath, int flags) {
     FILE* maps;
     char buff[256];
-    struct ctx* ctx = 0;
+    ctx_t* ctx = 0;
     off_t load_addr, size;
     int i, fd = -1, found = 0;
     char* shoff;
@@ -190,7 +191,7 @@ static void* fake_dlopen_with_path(const char* libpath, int flags) {
         fatal("mmap() failed for %s", libpath);
     }
 
-    ctx = (struct ctx*) calloc(1, sizeof(struct ctx));
+    ctx = (cgx_t*) calloc(1, sizeof(ctx_t));
     if (!ctx) {
         fatal("no memory for %s", libpath);
     }
@@ -234,9 +235,9 @@ static void* fake_dlopen_with_path(const char* libpath, int flags) {
                 break;
             }
             // won't even bother checking against the section name
-            // ctx->bias 是节头表在进程地址空间中的基地址
-            // sh_addr: 该节在ELF文件被加载到进程地址空间中后的偏移量，其在进程中的真实地址是:
-            // load_addr+sh->sh_addr，
+            // - sh_addr: 该节在ELF文件被加载到进程地址空间中后的偏移量，其在进程中的真实地址是:
+            // load_addr+sh->sh_addr.
+            // - sh_offset 在elf文件中的偏移量
             ctx->bias = (off_t) sh->sh_addr - (off_t) sh->sh_offset;
             i = elf->e_shnum;  /* exit for */
         }
@@ -328,13 +329,16 @@ static void* fake_dlopen(const char* filename, int flags) {
     }
 }
 
+/**
+ * 从 符号表(节) 中获取 name 指定的符号
+ */
 static void* fake_dlsym(void* handle, const char* name) {
     int i;
-    struct ctx* ctx = (struct ctx*) handle;
-    Elf_Sym* sym = (Elf_Sym*) ctx->dynsym;
-    char* strings = (char*) ctx->dynstr;
+    ctx_t* ctx = reinterpret_cast<ctx_t*>(handle);
+    Elf_Sym* sym = reinterpret_cast<Elf_Sym*>(ctx->dynsym);
+    char* strings = reinterpret_cast<char*>(ctx->dynstr);
 
-    for (i = 0; i < ctx->nsyms; ++i, ++sym) {
+    for (i = 0; i < ctx->nsyms; ++i, ++sym) { // 遍历符号表
         if (strcmp(strings + sym->st_name, name) == 0) { // 找到该符号(函数符号)
             // NB: sym->st_value is an offset into the section for relocatables,
             // but a VMA for shared libs or exe files, so we have to subtract 
@@ -356,6 +360,7 @@ static const char* fake_dlerror() {
 
 // =============== implementation for compat ==========
 static int SDK_INT = -1;
+
 static int get_sdk_level() {
     if (SDK_INT > 0) {
         return SDK_INT;
