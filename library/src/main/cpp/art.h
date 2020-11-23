@@ -23,6 +23,7 @@
 #include <list>
 #include <jni.h>
 
+// 这里的 Runtime 定义来自这里：
 // Android 6.0: http://androidxref.com/6.0.0_r5/xref/art/runtime/runtime.h
 // Android 7.0: http://androidxref.com/7.0.0_r1/xref/art/runtime/runtime.h
 // Android 7.1.1: http://androidxref.com/7.1.1_r6/xref/art/runtime/runtime.h
@@ -69,7 +70,6 @@ struct Runtime_7X {
 };
 
 struct Runtime_8X {
-
     uint64_t callee_save_methods_[3];
     void* pre_allocated_OutOfMemoryError_;
     void* pre_allocated_NoClassDefFoundError_;

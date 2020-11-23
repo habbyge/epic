@@ -2,7 +2,8 @@
 
 Epic 是一个在虚拟机层面、以 Java Method 为粒度的 **运行时** AOP Hook 框架。简单来说，Epic 就是 ART 上的 [Dexposed](https://github.com/alibaba/dexposed)（支持 Android 4.0 ~ 10.0）。它可以拦截本进程内部几乎任意的 Java 方法调用，可用于实现 AOP 编程、运行时插桩、性能分析、安全审计等。
 
-Epic 被 [VirtualXposed](https://github.com/android-hacker/VirtualXposed) 以及 [太极](https://www.coolapk.com/apk/me.weishu.exp) 使用，用来实现非 Root 场景下的 Xposed 功能，已经经过了相当广泛的验证。
+Epic 被 [VirtualXposed](https://github.com/android-hacker/VirtualXposed) 以及 [太极]
+(https://www.coolapk.com/apk/me.weishu.exp) 使用，用来实现非 Root 场景下的 Xposed 功能，已经经过了相当广泛的验证。
 
 关于 Epic 的实现原理，可以参考 [本文](http://weishu.me/2017/11/23/dexposed-on-art/)。
 
@@ -27,7 +28,7 @@ dependencies {
 1. 监控 Java 线程的创建和销毁：
 
 ```java
-class ThreadMethodHook extends XC_MethodHook{
+class ThreadMethodHook extends XC_MethodHook {
     @Override
     protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
         super.beforeHookedMethod(param);

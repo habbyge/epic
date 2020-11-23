@@ -38,4 +38,3 @@ void* getHeap(JNIEnv* env, int api) {
         return runtime8X->heap_;
     }
 }
-
