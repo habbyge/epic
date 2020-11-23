@@ -14,6 +14,8 @@
         "utility": "cpp",
         "vector": "cpp",
         "typeinfo": "cpp",
-        "stdexcept": "cpp"
+        "stdexcept": "cpp",
+        "__bit_reference": "cpp",
+        "__string": "cpp"
     }
 }
