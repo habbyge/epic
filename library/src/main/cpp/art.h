@@ -36,13 +36,17 @@ struct Runtime_7X {
     void* pre_allocated_NoClassDefFoundError_;
     void* resolution_method_;
     void* imt_conflict_method_;
-    // Unresolved method has the same behavior as the conflict method, it is used by the class linker
-    // for differentiating between unfilled imt slots vs conflict slots in superclasses.
+    
+    // Unresolved method has the same behavior as the conflict method, it is 
+    // used by the class linker for differentiating between unfilled imt slots 
+    // vs conflict slots in superclasses.
     void* imt_unimplemented_method_;
     void* sentinel_;
 
     int instruction_set_;
-    uint32_t callee_save_method_frame_infos_[9]; // QuickMethodFrameInfo = uint32_t * 3
+
+    // QuickMethodFrameInfo = uint32_t * 3
+    uint32_t callee_save_method_frame_infos_[9]; 
 
     void* compiler_callbacks_;
     bool is_zygote_;
@@ -75,13 +79,16 @@ struct Runtime_8X {
     void* pre_allocated_NoClassDefFoundError_;
     void* resolution_method_;
     void* imt_conflict_method_;
-    // Unresolved method has the same behavior as the conflict method, it is used by the class linker
-    // for differentiating between unfilled imt slots vs conflict slots in superclasses.
+
+    // Unresolved method has the same behavior as the conflict method, 
+    // it is used by the class linker for differentiating between unfilled 
+    // imt slots vs conflict slots in superclasses.
     void* imt_unimplemented_method_;
     void* sentinel_;
 
     int instruction_set_;
-    uint32_t callee_save_method_frame_infos_[9]; // QuickMethodFrameInfo = uint32_t * 3
+    // QuickMethodFrameInfo = uint32_t * 3
+    uint32_t callee_save_method_frame_infos_[9]; 
 
     void* compiler_callbacks_;
     bool is_zygote_;

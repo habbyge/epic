@@ -196,7 +196,8 @@ void init_entries(JNIEnv* env) {
         // 来，在dlopen会返回NULL，错误为: undefined symbol: xxxx.......
         // RTLD_GLOBAL: 它的含义是使得so库中的解析的定义变量在随后的其它的链接库中变得可以使用。
 
-        // Android L, art::JavaVMExt::AddWeakGlobalReference(art::Thread*, art::mirror::Object*)
+        // Android L: 
+        // art::JavaVMExt::AddWeakGlobalReference(art::Thread*, art::mirror::Object*)
         void* handle = dlopen("libart.so", RTLD_LAZY | RTLD_GLOBAL);
         addWeakGloablReference = (jobject (*)(JavaVM*, void*, void*)) dlsym(handle, 
             "_ZN3art9JavaVMExt22AddWeakGlobalReferenceEPNS_6ThreadEPNS_6mirror6ObjectE");
@@ -255,21 +256,23 @@ jboolean epic_compile(JNIEnv* env, jclass, jobject method, jlong self) {
     bool ret;
     if (api_level >= 29) {
         ret = ((JIT_COMPILE_METHOD2) jit_compile_method_)(jit_compiler_handle_,
-                                                          reinterpret_cast<void*>(art_method),
-                                                          reinterpret_cast<void*>(self), 
-                                                          false, 
-                                                          false);
+                                                    reinterpret_cast<void*>(art_method),
+                                                    reinterpret_cast<void*>(self), 
+                                                    false, 
+                                                    false);
     } else {
         ret = ((JIT_COMPILE_METHOD1) jit_compile_method_)(jit_compiler_handle_,
-                                                          reinterpret_cast<void*>(art_method),
-                                                          reinterpret_cast<void*>(self), 
-                                                          false);
+                                                    reinterpret_cast<void*>(art_method),
+                                                    reinterpret_cast<void*>(self), 
+                                                    false);
     }
     return (jboolean) ret;
 }
 
 jlong epic_suspendAll(JNIEnv*, jclass) {
-    ScopedSuspendAll* scopedSuspendAll = (ScopedSuspendAll*) malloc(sizeof(ScopedSuspendAll));
+    ScopedSuspendAll* scopedSuspendAll = (ScopedSuspendAll*) 
+            malloc(sizeof(ScopedSuspendAll));
+
     suspendAll(scopedSuspendAll, "stop_jit");
     return reinterpret_cast<jlong>(scopedSuspendAll);
 }
@@ -280,7 +283,9 @@ void epic_resumeAll(JNIEnv* env, jclass, jlong obj) {
 }
 
 jlong epic_stopJit(JNIEnv*, jclass) {
-    ScopedJitSuspend* scopedJitSuspend = (ScopedJitSuspend*) malloc(sizeof(ScopedJitSuspend));
+    ScopedJitSuspend* scopedJitSuspend = (ScopedJitSuspend*) 
+            malloc(sizeof(ScopedJitSuspend));
+
     stopJit(scopedJitSuspend);
     return reinterpret_cast<jlong >(scopedJitSuspend);
 }
@@ -341,7 +346,7 @@ void epic_memput(JNIEnv* env, jclass, jbyteArray src, jlong dest) {
         // LOGV("put %d with %d", i, *(srcPnt + i));
         destPnt[i] = (unsigned char) srcPnt[i];
     }
-    env->ReleaseByteArrayElements(src, srcPnt, 0); // TODO: ing......
+    env->ReleaseByteArrayElements(src, srcPnt, 0);
 }
 
 jbyteArray epic_memget(JNIEnv* env, jclass, jlong src, jint length) {
@@ -408,8 +413,10 @@ jboolean epic_isGetObjectAvaliable(JNIEnv*, jclass) {
 
 jlong pc, jlong sizeOfDirectJump,
 
-jboolean epic_activate(JNIEnv* env, jclass jclazz, jlong jumpToAddress, 
-                       jlong sizeOfBridgeJump, jbyteArray code) {
+jboolean epic_activate(JNIEnv* env, jclass jclazz, 
+                       jlong jumpToAddress, 
+                       jlong sizeOfBridgeJump, 
+                       jbyteArray code) {
 
     // fetch the array, we can not call this when thread suspend(may lead deadlock)
     // 获取Java层的字节数组：code，转换为JNI能用的字节数组 和 长度
@@ -458,28 +465,103 @@ jboolean epic_activate(JNIEnv* env, jclass jclazz, jlong jumpToAddress,
 }
 
 static JNINativeMethod dexposedMethods[] = {
-        {"mmap",                 "(I)J",                           (void*) epic_mmap},
-        {"munmap",               "(JI)Z",                          (void*) epic_munmap},
-        {"memcpy",               "(JJI)V",                         (void*) epic_memcpy},
-        {"memput",               "([BJ)V",                         (void*) epic_memput},
-        {"memget",               "(JI)[B",                         (void*) epic_memget},
-        {"munprotect",           "(JJ)Z",                          (void*) epic_munprotect},
-        {"getMethodAddress",     "(Ljava/lang/reflect/Member;)J",  (void*) epic_getMethodAddress},
-        {"cacheflush",           "(JJ)Z",                          (void*) epic_cacheflush},
-        {"malloc",               "(I)J",                           (void*) epic_malloc},
-        {"getObjectNative",      "(JJ)Ljava/lang/Object;",         (void*) epic_getobject},
-        {"compileMethod",        "(Ljava/lang/reflect/Member;J)Z", (void*) epic_compile},
-        {"suspendAll",           "()J",                            (void*) epic_suspendAll},
-        {"resumeAll",            "(J)V",                           (void*) epic_resumeAll},
-        {"stopJit",              "()J",                            (void*) epic_stopJit},
-        {"startJit",             "(J)V",                           (void*) epic_startJit},
-        {"disableMovingGc",      "(I)V",                           (void*) epic_disableMovingGc},
-        {"activateNative",       "(JJJJ[B)Z",                      (void*) epic_activate},
-        {"isGetObjectAvailable", "()Z",                            (void*) epic_isGetObjectAvaliable}
+    {
+        "mmap",                 
+        "(I)J",                           
+        (void*) epic_mmap
+    },
+    {
+        "munmap",               
+        "(JI)Z",                          
+        (void*) epic_munmap
+    },
+    {
+        "memcpy",               
+        "(JJI)V",                         
+        (void*) epic_memcpy
+    },
+    {
+        "memput",               
+        "([BJ)V",                         
+        (void*) epic_memput
+    },
+    {
+        "memget",               
+        "(JI)[B",                         
+        (void*) epic_memget
+    },
+    {
+        "munprotect",           
+        "(JJ)Z",                          
+        (void*) epic_munprotect
+    },
+    {
+        "getMethodAddress",     
+        "(Ljava/lang/reflect/Member;)J",  
+        (void*) epic_getMethodAddress
+    },
+    
+    {
+        "cacheflush",           
+        "(JJ)Z",                          
+        (void*) epic_cacheflush
+    },
+    {
+        "malloc",               
+        "(I)J",                           
+        (void*) epic_malloc
+    },
+    {
+        "getObjectNative",      
+        "(JJ)Ljava/lang/Object;",         
+        (void*) epic_getobject
+    },
+    {
+        "compileMethod",        
+        "(Ljava/lang/reflect/Member;J)Z", 
+        (void*) epic_compile
+    },
+    {
+        "suspendAll",           
+        "()J",                            
+        (void*) epic_suspendAll
+    },
+    {
+        "resumeAll",            
+        "(J)V",                           
+        (void*) epic_resumeAll
+    },
+    {
+        "stopJit",              
+        "()J",                            
+        (void*) epic_stopJit
+    },
+    {
+        "startJit",             
+        "(J)V",                           
+        (void*) epic_startJit
+    },
+    {
+        "disableMovingGc",      
+        "(I)V",                           
+        (void*) epic_disableMovingGc
+    },
+    {
+        "activateNative",       
+        "(JJJJ[B)Z",                      
+        (void*) epic_activate
+    },
+    {
+        "isGetObjectAvailable", 
+        "()Z",                            
+        (void*) epic_isGetObjectAvaliable
+    }
 };
 
-static int registerNativeMethods(JNIEnv* env, const char* className,
-                                 JNINativeMethod* gMethods, int numMethods) {
+static int registerNativeMethods(JNIEnv* env, 
+                                 const char* className,
+                                 JNINativeMethod* gMethods, 
+                                 int numMethods) {
 
     jclass clazz = env->FindClass(className);
     if (clazz == NULL) {

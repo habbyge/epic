@@ -24,7 +24,6 @@ import java.lang.reflect.Method;
 import me.weishu.epic.art.method.ArtMethod;
 
 public class Runtime {
-
     private static final String TAG = "Runtime";
 
     private volatile static Boolean isThumb = null;
@@ -34,7 +33,11 @@ public class Runtime {
 
     static {
         try {
-            g64 = (boolean) Class.forName("dalvik.system.VMRuntime").getDeclaredMethod("is64Bit").invoke(Class.forName("dalvik.system.VMRuntime").getDeclaredMethod("getRuntime").invoke(null));
+            g64 = (boolean) Class.forName("dalvik.system.VMRuntime")
+                    .getDeclaredMethod("is64Bit")
+                    .invoke(Class.forName("dalvik.system.VMRuntime")
+                    .getDeclaredMethod("getRuntime")
+                    .invoke(null));
         } catch (Exception e) {
             Log.e(TAG, "get is64Bit failed, default not 64bit!", e);
             g64 = false;
@@ -59,8 +62,13 @@ public class Runtime {
         try {
             Method method = String.class.getDeclaredMethod("hashCode");
             ArtMethod artMethodStruct = ArtMethod.of(method);
-            long entryPointFromQuickCompiledCode = artMethodStruct.getEntryPointFromQuickCompiledCode();
-            Logger.w("Runtime", "isThumb2, entry: " + Long.toHexString(entryPointFromQuickCompiledCode));
+            
+            long entryPointFromQuickCompiledCode = 
+                    artMethodStruct.getEntryPointFromQuickCompiledCode();
+
+            Logger.w("Runtime", "isThumb2, entry: " + Long.toHexString(
+                    entryPointFromQuickCompiledCode));
+
             isThumb = ((entryPointFromQuickCompiledCode & 1) == 1);
             return isThumb;
         } catch (Throwable e) {

@@ -7,6 +7,7 @@ import android.util.Log;
  * Do not call this forever!!!
  */
 public class NeverCalled {
+    
     private void fake(int a) {
         Log.i(getClass().getSimpleName(), a + "Do not inline me!!");
     }

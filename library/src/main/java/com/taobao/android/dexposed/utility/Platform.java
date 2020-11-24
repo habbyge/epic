@@ -21,7 +21,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 public abstract class Platform {
-
     /*package*/ static Platform PLATFORM_INTERNAL;
 
     static {
@@ -70,25 +69,31 @@ public abstract class Platform {
 
         @Override
         public long orderByteToLong(byte[] data) {
-            return ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN).getInt() & 0xFFFFFFFFL;
+            return ByteBuffer.wrap(data)
+                    .order(ByteOrder.LITTLE_ENDIAN)
+                    .getInt() & 0xFFFFFFFFL;
         }
 
         @Override
         public byte[] orderLongToByte(long serial, int length) {
-            return ByteBuffer.allocate(length).order(ByteOrder.LITTLE_ENDIAN).putInt((int) serial).array();
+            return ByteBuffer.allocate(length)
+                    .order(ByteOrder.LITTLE_ENDIAN)
+                    .putInt((int) serial)
+                    .array();
         }
 
         @Override
         public byte[] orderIntToByte(int serial) {
-            return ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(serial).array();
+            return ByteBuffer.allocate(4)
+                    .order(ByteOrder.LITTLE_ENDIAN)
+                    .putInt(serial)
+                    .array();
         }
 
         @Override
         public int getIntSize() {
             return 4;
         }
-
-
     }
 
     static class Platform64Bit extends Platform {
@@ -105,12 +110,18 @@ public abstract class Platform {
 
         @Override
         public byte[] orderLongToByte(long serial, int length) {
-            return ByteBuffer.allocate(length).order(ByteOrder.LITTLE_ENDIAN).putLong(serial).array();
+            return ByteBuffer.allocate(length)
+                    .order(ByteOrder.LITTLE_ENDIAN)
+                    .putLong(serial)
+                    .array();
         }
 
         @Override
         public byte[] orderIntToByte(int serial) {
-            return ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(serial).array();
+            return ByteBuffer.allocate(4)
+                    .order(ByteOrder.LITTLE_ENDIAN)
+                    .putInt(serial)
+                    .array();
         }
 
         @Override
@@ -118,5 +129,4 @@ public abstract class Platform {
             return 8;
         }
     }
-
 }

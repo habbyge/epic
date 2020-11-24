@@ -84,9 +84,13 @@ public class DeviceCheck {
     }
 
     private static boolean isSupportSDKVersion() {
-        if (android.os.Build.VERSION.SDK_INT >= 14 && android.os.Build.VERSION.SDK_INT < 20) {
+        if (android.os.Build.VERSION.SDK_INT >= 14 && 
+                android.os.Build.VERSION.SDK_INT < 20) {
+
             return true;
-        } else if (android.os.Build.VERSION.SDK_INT == 10 || android.os.Build.VERSION.SDK_INT == 9) {
+        } else if (android.os.Build.VERSION.SDK_INT == 10 || 
+                android.os.Build.VERSION.SDK_INT == 9) {
+
             return true;
         }
         return false;
@@ -144,7 +148,10 @@ public class DeviceCheck {
                 isDeviceSupportable = false;
             }
         } finally {
-            Log.d("hotpatch", "device support is " + isDeviceSupportable + "checked" + isCheckedDeviceSupport);
+            Log.d("hotpatch", "device support is " 
+                    + isDeviceSupportable + "checked" 
+                    + isCheckedDeviceSupport);
+                    
             isCheckedDeviceSupport = true;
         }
         return isDeviceSupportable;
@@ -164,7 +171,9 @@ public class DeviceCheck {
         } catch (IllegalAccessException c) {
         } catch (InvocationTargetException d) {
         }
-        if ((s2 != null && s2.toLowerCase().contains("lemur")) || (s1 != null && s1.trim().length() > 0)) {
+        if ((s2 != null && s2.toLowerCase().contains("lemur")) 
+                || (s1 != null && s1.trim().length() > 0)) {
+                    
             return true;
         } else {
             return false;
