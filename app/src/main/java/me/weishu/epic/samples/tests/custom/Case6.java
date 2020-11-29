@@ -17,7 +17,6 @@ import me.weishu.epic.art.method.ArtMethod;
  */
 
 public class Case6 implements Case {
-
     private static final String TAG = "Case6";
 
     @Override
@@ -27,13 +26,22 @@ public class Case6 implements Case {
 
         long testAddr = Unsafe.getObjectAddress(test);
         Log.i(TAG, "test object address :" + testAddr);
-        Log.i(TAG, "test object :" + EpicNative.getObject(XposedHelpers.getLongField(Thread.currentThread(), "nativePeer"), testAddr));
+        Log.i(TAG, "test object :" + EpicNative.getObject(
+                XposedHelpers.getLongField(Thread.currentThread(), "nativePeer"), 
+                testAddr));
 
         // Log.i(TAG, "object:" + EpicNative.getObject())
-        final Method nanoTime = XposedHelpers.findMethodExact(System.class, "nanoTime");
-        final Method uptimeMillis = XposedHelpers.findMethodExact(SystemClock.class, "uptimeMillis");
-        final Method map = XposedHelpers.findMethodExact(Target.class, "test1", Object.class, int.class);
-        final Method malloc = XposedHelpers.findMethodExact(Target.class, "test3", Object.class, int.class);
+        final Method nanoTime = XposedHelpers.findMethodExact(
+                System.class, "nanoTime");
+
+        final Method uptimeMillis = XposedHelpers.findMethodExact(
+                SystemClock.class, "uptimeMillis");
+
+        final Method map = XposedHelpers.findMethodExact(
+                Target.class, "test1", Object.class, int.class);
+
+        final Method malloc = XposedHelpers.findMethodExact(
+                Target.class, "test3", Object.class, int.class);
 
         ArtMethod artMethod1 = ArtMethod.of(nanoTime);
         ArtMethod artMethod2 = ArtMethod.of(uptimeMillis);
@@ -41,10 +49,17 @@ public class Case6 implements Case {
         ArtMethod artMethod3 = ArtMethod.of(map);
         ArtMethod artMethod4 = ArtMethod.of(malloc);
 
-        Log.i(TAG, "nanoTime: addr: 0x" + artMethod1.getAddress() + ", entry:" + Debug.addrHex(artMethod1.getEntryPointFromQuickCompiledCode()));
-        Log.i(TAG, "uptimeMills: addr: 0x" + artMethod2.getAddress() + ", entry:" + Debug.addrHex(artMethod2.getEntryPointFromQuickCompiledCode()));
-        Log.i(TAG, "map : addr: 0x" + artMethod3.getAddress() + ", entry:" + Debug.addrHex(artMethod3.getEntryPointFromQuickCompiledCode()));
-        Log.i(TAG, "malloc: addr: 0x" + artMethod4.getAddress() + ", entry:" + Debug.addrHex(artMethod4.getEntryPointFromQuickCompiledCode()));
+        Log.i(TAG, "nanoTime: addr: 0x" + artMethod1.getAddress() + ", entry:" 
+                + Debug.addrHex(artMethod1.getEntryPointFromQuickCompiledCode()));
+
+        Log.i(TAG, "uptimeMills: addr: 0x" + artMethod2.getAddress() + ", entry:" 
+                + Debug.addrHex(artMethod2.getEntryPointFromQuickCompiledCode()));
+
+        Log.i(TAG, "map : addr: 0x" + artMethod3.getAddress() + ", entry:" 
+                + Debug.addrHex(artMethod3.getEntryPointFromQuickCompiledCode()));
+
+        Log.i(TAG, "malloc: addr: 0x" + artMethod4.getAddress() + ", entry:" 
+                + Debug.addrHex(artMethod4.getEntryPointFromQuickCompiledCode()));
     }
 
     @Override

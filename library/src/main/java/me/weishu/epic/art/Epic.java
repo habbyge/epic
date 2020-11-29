@@ -40,7 +40,6 @@ import me.weishu.epic.art.method.ArtMethod;
  * Hook Center.
  */
 public final class Epic {
-
     private static final String TAG = "Epic";
 
     private static final Map<String, ArtMethod> backupMethodsMapping = new ConcurrentHashMap<>();
@@ -66,7 +65,8 @@ public final class Epic {
             }
         }
         if (ShellCode == null) {
-            throw new RuntimeException("Do not support this ARCH now!! API LEVEL:" + apiLevel + " thumb2 ? : " + thumb2);
+            throw new RuntimeException("Do not support this ARCH now!! API LEVEL:" 
+                    + apiLevel + " thumb2 ? : " + thumb2);
         }
         Logger.i(TAG, "Using: " + ShellCode.getName());
     }
@@ -81,7 +81,6 @@ public final class Epic {
     }
 
     private static boolean hookMethod(ArtMethod artOrigin) {
-
         MethodInfo methodInfo = new MethodInfo();
         methodInfo.isStatic = Modifier.isStatic(artOrigin.getModifiers());
         final Class<?>[] parameterTypes = artOrigin.getParameterTypes();
@@ -104,11 +103,14 @@ public final class Epic {
 
         long originEntry = artOrigin.getEntryPointFromQuickCompiledCode();
         if (originEntry == ArtMethod.getQuickToInterpreterBridge()) {
-            Logger.i(TAG, "this method is not compiled, compile it now. current entry: 0x" + Long.toHexString(originEntry));
+            Logger.i(TAG, "this method is not compiled, compile it now " + 
+                    "current entry: 0x" + Long.toHexString(originEntry));
+                    
             boolean ret = artOrigin.compile();
             if (ret) {
                 originEntry = artOrigin.getEntryPointFromQuickCompiledCode();
-                Logger.i(TAG, "compile method success, new entry: 0x" + Long.toHexString(originEntry));
+                Logger.i(TAG, "compile method success, new entry: 0x" 
+                        + Long.toHexString(originEntry));
             } else {
                 Logger.e(TAG, "compile method failed...");
                 return false;
@@ -118,8 +120,10 @@ public final class Epic {
 
         ArtMethod backupMethod = artOrigin.backup();
 
-        Logger.i(TAG, "backup method address:" + Debug.addrHex(backupMethod.getAddress()));
-        Logger.i(TAG, "backup method entry :" + Debug.addrHex(backupMethod.getEntryPointFromQuickCompiledCode()));
+        Logger.i(TAG, "backup method address:" + Debug.addrHex(
+                backupMethod.getAddress()));
+        Logger.i(TAG, "backup method entry :" + Debug.addrHex(
+                backupMethod.getEntryPointFromQuickCompiledCode()));
 
         ArtMethod backupList = getBackMethod(artOrigin);
         if (backupList == null) {

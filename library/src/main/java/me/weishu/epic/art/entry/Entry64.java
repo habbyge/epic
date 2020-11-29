@@ -32,10 +32,9 @@ import me.weishu.epic.art.EpicNative;
 
 @SuppressWarnings({"unused", "ConstantConditions"})
 public class Entry64 {
-
     private final static String TAG = "Entry64";
 
-    //region ---------------callback---------------
+    // region --------------------------- callback ---------------------------
     private static int onHookInt(Object artmethod, Object receiver, Object[] args) {
         return (Integer) DexposedBridge.handleHookedArtMethod(artmethod, receiver, args);
     }
@@ -78,44 +77,64 @@ public class Entry64 {
     //endregion
 
     //region ---------------bridge---------------
-    private static void voidBridge(long r1, long self, long struct, long x4, long x5, long x6, long x7) {
+    private static void voidBridge(long r1, long self, long struct, 
+                                   long x4, long x5, long x6, long x7) {
+
         referenceBridge(r1, self, struct, x4, x5, x6, x7);
     }
 
-    private static boolean booleanBridge(long r1, long self, long struct, long x4, long x5, long x6, long x7) {
+    private static boolean booleanBridge(long r1, long self, long struct, 
+                                         long x4, long x5, long x6, long x7) {
+
         return (Boolean) referenceBridge(r1, self, struct, x4, x5, x6, x7);
     }
 
-    private static byte byteBridge(long r1, long self, long struct, long x4, long x5, long x6, long x7) {
+    private static byte byteBridge(long r1, long self, long struct, 
+                                   long x4, long x5, long x6, long x7) {
+
         return (Byte) referenceBridge(r1, self, struct, x4, x5, x6, x7);
     }
 
-    private static short shortBridge(long r1, long self, long struct, long x4, long x5, long x6, long x7) {
+    private static short shortBridge(long r1, long self, long struct, 
+                                     long x4, long x5, long x6, long x7) {
+
         return (Short) referenceBridge(r1, self, struct, x4, x5, x6, x7);
     }
 
-    private static char charBridge(long r1, long self, long struct, long x4, long x5, long x6, long x7) {
+    private static char charBridge(long r1, long self, long struct, 
+                                   long x4, long x5, long x6, long x7) {
+
         return (Character) referenceBridge(r1, self, struct, x4, x5, x6, x7);
     }
 
-    private static int intBridge(long r1, long self, long struct, long x4, long x5, long x6, long x7) {
+    private static int intBridge(long r1, long self, long struct, 
+                                 long x4, long x5, long x6, long x7) {
+
         return (Integer) referenceBridge(r1, self, struct, x4, x5, x6, x7);
     }
 
-    private static long longBridge(long r1, long self, long struct, long x4, long x5, long x6, long x7) {
+    private static long longBridge(long r1, long self, long struct, 
+                                   long x4, long x5, long x6, long x7) {
+
         return (Long) referenceBridge(r1, self, struct, x4, x5, x6, x7);
     }
 
-    private static float floatBridge(long r1, long self, long struct, long x4, long x5, long x6, long x7) {
+    private static float floatBridge(long r1, long self, long struct, 
+                                     long x4, long x5, long x6, long x7) {
+
         return (Float) referenceBridge(r1, self, struct, x4, x5, x6, x7);
     }
 
-    private static double doubleBridge(long r1, long self, long struct, long x4, long x5, long x6, long x7) {
+    private static double doubleBridge(long r1, long self, long struct, 
+                                       long x4, long x5, long x6, long x7) {
+
         return (Double) referenceBridge(r1, self, struct, x4, x5, x6, x7);
     }
     //endregion
 
-    private static Object referenceBridge(long x1, long self, long struct, long x4, long x5, long x6, long x7) {
+    private static Object referenceBridge(long x1, long self, long struct, 
+                                          long x4, long x5, long x6, long x7) {
+
         Logger.i(TAG, "enter bridge function.");
 
         // struct {
@@ -127,21 +146,31 @@ public class Entry64 {
         // sp + 16 = r4
 
         Logger.d(TAG, "self:" + Long.toHexString(self));
-        final long nativePeer = XposedHelpers.getLongField(Thread.currentThread(), "nativePeer");
+        final long nativePeer = XposedHelpers.getLongField(Thread.currentThread(), 
+                                                           "nativePeer");
+
         Logger.d(TAG, "java thread native peer:" + Long.toHexString(nativePeer));
 
         Logger.d(TAG, "struct:" + Long.toHexString(struct));
 
-        final long sp = ByteBuffer.wrap(EpicNative.get(struct, 8)).order(ByteOrder.LITTLE_ENDIAN).getLong();
+        final long sp = ByteBuffer.wrap(EpicNative.get(struct, 8))
+                                  .order(ByteOrder.LITTLE_ENDIAN)
+                                  .getLong();
 
         Logger.d(TAG, "stack:" + sp);
 
-        final byte[] rr1 = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putLong(x1).array();
+        final byte[] rr1 = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN)
+                                                 .putLong(x1)
+                                                 .array();
+
         final byte[] r2 = EpicNative.get(struct + 8, 8);
 
         final byte[] r3 = EpicNative.get(struct + 16, 8);
 
-        final long sourceMethod = ByteBuffer.wrap(EpicNative.get(struct + 24, 8)).order(ByteOrder.LITTLE_ENDIAN).getLong();
+        final long sourceMethod = ByteBuffer.wrap(EpicNative.get(struct + 24, 8))
+                                            .order(ByteOrder.LITTLE_ENDIAN)
+                                            .getLong();
+
         Logger.d(TAG, "sourceMethod:" + Long.toHexString(sourceMethod));
 
         Epic.MethodInfo originMethodInfo = Epic.getMethodInfo(sourceMethod);
@@ -160,30 +189,36 @@ public class Entry64 {
         if (isStatic) {
             receiver = null;
             do {
-                if (numberOfArgs == 0) break;
+                if (numberOfArgs == 0) 
+                    break;
                 arguments[0] = wrapArgument(typeOfArgs[0], self, rr1);
-                if (numberOfArgs == 1) break;
+                if (numberOfArgs == 1) 
+                    break;
                 arguments[1] = wrapArgument(typeOfArgs[1], self, r2);
-                if (numberOfArgs == 2) break;
+                if (numberOfArgs == 2) 
+                    break;
                 arguments[2] = wrapArgument(typeOfArgs[2], self, r3);
-                if (numberOfArgs == 3) break;
+                if (numberOfArgs == 3) 
+                    break;
                 arguments[3] = wrapArgument(typeOfArgs[3], self, x4);
-                if (numberOfArgs == 4) break;
+                if (numberOfArgs == 4) 
+                    break;
                 arguments[4] = wrapArgument(typeOfArgs[4], self, x5);
-                if (numberOfArgs == 5) break;
+                if (numberOfArgs == 5) 
+                    break;
                 arguments[5] = wrapArgument(typeOfArgs[5], self, x6);
-                if (numberOfArgs == 6) break;
+                if (numberOfArgs == 6) 
+                    break;
                 arguments[6] = wrapArgument(typeOfArgs[6], self, x7);
-                if (numberOfArgs == 7) break;
+                if (numberOfArgs == 7) 
+                    break;
 
                 for (int i = 7; i < numberOfArgs; i++) {
                     byte[] argsInStack = EpicNative.get(sp + i * 8 + 8, 8);
                     arguments[i] = wrapArgument(typeOfArgs[i], self, argsInStack);
                 }
             } while (false);
-
         } else {
-
             receiver = EpicNative.getObject(self, x1);
             Logger.i(TAG, "this :" + receiver);
 
@@ -241,11 +276,16 @@ public class Entry64 {
     }
 
     private static Object wrapArgument(Class<?> type, long self, long value) {
-        return wrapArgument(type, self, ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putLong(value).array());
+        return wrapArgument(type, self, ByteBuffer.allocate(8)
+                .order(ByteOrder.LITTLE_ENDIAN)
+                .putLong(value)
+                .array());
     }
 
     private static Object wrapArgument(Class<?> type, long self, byte[] value) {
-        final ByteBuffer byteBuffer = ByteBuffer.wrap(value).order(ByteOrder.LITTLE_ENDIAN);
+        final ByteBuffer byteBuffer = ByteBuffer.wrap(value)
+                .order(ByteOrder.LITTLE_ENDIAN);
+
         if (type.isPrimitive()) {
             if (type == int.class) {
                 return byteBuffer.getInt();
@@ -269,7 +309,6 @@ public class Entry64 {
         } else {
             long address = byteBuffer.getLong();
             Object object = EpicNative.getObject(self, address);
-            //Logger.i(TAG, "wrapArgument, address: 0x" + Long.toHexString(address) + ", value:" + object);
             return object;
         }
     }
@@ -277,8 +316,10 @@ public class Entry64 {
     private static Map<Class<?>, String> bridgeMethodMap = new HashMap<>();
 
     static {
-        Class<?>[] primitiveTypes = new Class[]{boolean.class, byte.class, char.class, short.class,
-                int.class, long.class, float.class, double.class};
+        Class<?>[] primitiveTypes = new Class[]{
+            boolean.class, byte.class, char.class, short.class,
+            int.class, long.class, float.class, double.class
+        };
         for (Class<?> primitiveType : primitiveTypes) {
             bridgeMethodMap.put(primitiveType, primitiveType.getName() + "Bridge");
         }
@@ -288,10 +329,17 @@ public class Entry64 {
 
     public static Method getBridgeMethod(Class<?> returnType) {
         try {
-            final String bridgeMethod = bridgeMethodMap.get(returnType.isPrimitive() ? returnType : Object.class);
-            Logger.d(TAG, "bridge method:" + bridgeMethod + ", map:" + bridgeMethodMap);
-            Method method = Entry64.class.getDeclaredMethod(bridgeMethod, long.class, long.class,
-                    long.class, long.class, long.class, long.class, long.class);
+            final String bridgeMethod = bridgeMethodMap.get(
+                        returnType.isPrimitive() 
+                        ? returnType : Object.class);
+                        
+            Logger.d(TAG, "bridge method:" + bridgeMethod 
+                    + ", map:" + bridgeMethodMap);
+            Method method = Entry64.class.getDeclaredMethod(bridgeMethod, 
+                                                            long.class, long.class,
+                                                            long.class, long.class, 
+                                                            long.class, long.class, 
+                                                            long.class);
             method.setAccessible(true);
             return method;
         } catch (Throwable e) {

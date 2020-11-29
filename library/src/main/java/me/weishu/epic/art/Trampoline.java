@@ -29,6 +29,9 @@ import me.weishu.epic.art.entry.Entry;
 import me.weishu.epic.art.entry.Entry64;
 import me.weishu.epic.art.method.ArtMethod;
 
+/**
+ * 蹦床，用于在目标函数地址开始处插入一段跳转指令
+ */
 class Trampoline {
     private static final String TAG = "Trampoline";
 
@@ -62,11 +65,15 @@ class Trampoline {
         int quickCompiledCodeSize = Epic.getQuickCompiledCodeSize(originMethod);
         int sizeOfDirectJump = shellCode.sizeOfDirectJump();
         if (quickCompiledCodeSize < sizeOfDirectJump) {
-            Logger.w(TAG, originMethod.toGenericString() + " quickCompiledCodeSize: " + quickCompiledCodeSize);
+            Logger.w(TAG, originMethod.toGenericString() 
+                    + " quickCompiledCodeSize: " 
+                    + quickCompiledCodeSize);
+
             originMethod.setEntryPointFromQuickCompiledCode(getTrampolinePc());
             return true;
         }
-        // 这里是绝对不能改EntryPoint的，碰到GC就挂(GC暂停线程的时候，遍历所有线程堆栈，如果被hook的方法在堆栈上，那就GG)
+        // 这里是绝对不能改EntryPoint的，碰到GC就挂(GC暂停线程的时候，遍历所有线程堆栈，
+        // 如果被hook的方法在堆栈上，那就GG)
         // source.setEntryPointFromQuickCompiledCode(script.getTrampolinePc());
         return activate();
     }
@@ -88,7 +95,8 @@ class Trampoline {
         }
         trampolineSize = getSize();
         trampolineAddress = EpicNative.map(trampolineSize);
-        Logger.d(TAG, "Trampoline alloc:" + trampolineSize + ", addr: 0x" + Long.toHexString(trampolineAddress));
+        Logger.d(TAG, "Trampoline alloc:" + trampolineSize + 
+                ", addr: 0x" + Long.toHexString(trampolineAddress));
     }
 
     private void free() {
@@ -130,10 +138,15 @@ class Trampoline {
 
     private boolean activate() {
         long pc = getTrampolinePc();
-        Logger.d(TAG, "Writing direct jump entry " + Debug.addrHex(pc) + " to origin entry: 0x" + Debug.addrHex(jumpToAddress));
+
+        Logger.d(TAG, "Writing direct jump entry " + Debug.addrHex(pc) 
+                + " to origin entry: 0x" + Debug.addrHex(jumpToAddress));
+
         synchronized (Trampoline.class) {
-            return EpicNative.activateNative(jumpToAddress, pc, shellCode.sizeOfDirectJump(),
-                    shellCode.sizeOfBridgeJump(), shellCode.createDirectJump(pc));
+            return EpicNative.activateNative(jumpToAddress, pc, 
+                    shellCode.sizeOfDirectJump(),
+                    shellCode.sizeOfBridgeJump(), 
+                    shellCode.createDirectJump(pc));
         }
     }
 
@@ -147,9 +160,8 @@ class Trampoline {
         final Epic.MethodInfo methodInfo = Epic.getMethodInfo(source.getAddress());
         final Class<?> returnType = methodInfo.returnType;
 
-//        Method bridgeMethod = Runtime.is64Bit() ? (Build.VERSION.SDK_INT == 23 ? Entry64_2.getBridgeMethod(methodInfo) : Entry64.getBridgeMethod(returnType))
-//                : Entry.getBridgeMethod(returnType);
-        Method bridgeMethod = Runtime.is64Bit() ? Entry64.getBridgeMethod(returnType)
+        Method bridgeMethod = Runtime.is64Bit() 
+                ? Entry64.getBridgeMethod(returnType)
                 : Entry.getBridgeMethod(returnType);
 
         final ArtMethod target = ArtMethod.of(bridgeMethod);
@@ -163,6 +175,7 @@ class Trampoline {
         Logger.d(TAG, "targetEntry:" + Debug.longHex(targetEntry));
         Logger.d(TAG, "structAddress:" + Debug.longHex(structAddress));
 
-        return shellCode.createBridgeJump(targetAddress, targetEntry, sourceAddress, structAddress);
+        return shellCode.createBridgeJump(targetAddress, 
+                targetEntry, sourceAddress, structAddress);
     }
 }

@@ -33,4 +33,4 @@ int dlclose_ex(void* handle);
 const char* dlerror_ex();
 
 };
-#endif //DEXPOSED_DLFCN_H
+#endif // DEXPOSED_DLFCN_H

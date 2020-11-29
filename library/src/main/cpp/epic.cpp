@@ -108,6 +108,30 @@
  *     r14如栈可以处理嵌套中断
  * 程序计数器r15(pc)
  * 
+ * 特殊寄存器：
+ * r15 PC The Program Counter 程序计数器
+ * 
+ * r14 LR The Link Register 连接寄存器
+ * 当执行子程序调用指令(BL)时,R14可得到R15(程序计数器PC)的备份，在每一种运行模式下，都可用R14保存
+ * 子程序的返回地址，当用BL或BLX指令调用子程序时，将PC的当前值复制给R14，执行完子程序后，又将R14的
+ * 值复制回PC，即可完成子程序的调用返回。以上的描述可用指令完成。执行以下任意一条指令:
+ * mov pc lr
+ * bx lr
+ * 
+ * r13 SP The Stack Pointer 栈顶寄存器
+ * 
+ * 内部程序调用暂存寄存器（可简单的认为暂存SP）
+ * r12 IP The Intra-Procedure-call scratch register. 
+ * 
+ * 
+ * r11 是optional的，被称为FP，即frame pointer 栈帧寄存器
+ * 
+ * SB：静态基址寄存器
+ * SL：数据栈限制指针
+ * 
+ * CPSR Current Program Status Register 当前程序状态 寄存器
+ * SPSR Save Program Status Register    保存的程序状态寄存器
+ * 
  * trampoline2 蹦床函数
  */
 
@@ -125,8 +149,7 @@
 
 #undef NDEBUG
 #ifdef NDEBUG
-#define LOGV(...)  ((void)__android_log_print(ANDROID_LOG_INFO, \
-        "epic.Native", __VA_ARGS__))
+#define LOGV(...)  ((void)__android_log_print(ANDROID_LOG_INFO, "epic.Native", __VA_ARGS__))
 #else
 #define LOGV(...)
 #endif
@@ -160,7 +183,6 @@ void (*stopJit)(ScopedJitSuspend*) = nullptr;
 void (*DisableMovingGc)(void*) = nullptr;
 
 void* __self() {
-
 #ifdef __arm__
     register uint32_t r9 asm("r9");
     return (void*) r9;
@@ -169,8 +191,7 @@ void* __self() {
     return (void*) x19;
 #else
 #endif
-
-};
+}
 
 static int api_level;
 
@@ -179,7 +200,6 @@ static int api_level;
  * 偏移处，然后直接调用改地址的函数符号，并传参即可。
  */
 void init_entries(JNIEnv* env) {
-
     // 获取Android系统 SDK 版本：adb shell getprop ro.build.version.release 
     // 我的机器上返回: 10.
     // 获取Android系统 API 版本：adb shell getprop ro.build.version.sdk 我的机器上返回：29
@@ -196,12 +216,14 @@ void init_entries(JNIEnv* env) {
         // 来，在dlopen会返回NULL，错误为: undefined symbol: xxxx.......
         // RTLD_GLOBAL: 它的含义是使得so库中的解析的定义变量在随后的其它的链接库中变得可以使用。
 
-        // Android L, art::JavaVMExt::AddWeakGlobalReference(art::Thread*, art::mirror::Object*)
+        // Android L:
+        // art::JavaVMExt::AddWeakGlobalReference(art::Thread*, art::mirror::Object*)
         void* handle = dlopen("libart.so", RTLD_LAZY | RTLD_GLOBAL);
         addWeakGloablReference = (jobject (*)(JavaVM*, void*, void*)) dlsym(handle, 
             "_ZN3art9JavaVMExt22AddWeakGlobalReferenceEPNS_6ThreadEPNS_6mirror6ObjectE");
     } else if (api_level < 24) {
-        // Android M, art::JavaVMExt::AddWeakGlobalRef(art::Thread*, art::mirror::Object*)
+        // Android M:
+        // art::JavaVMExt::AddWeakGlobalRef(art::Thread*, art::mirror::Object*)
         void* handle = dlopen("libart.so", RTLD_LAZY | RTLD_GLOBAL);
         addWeakGloablReference = (jobject (*)(JavaVM*, void*, void*)) dlsym(handle, 
                 "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadEPNS_6mirror6ObjectE");
@@ -232,39 +254,36 @@ void init_entries(JNIEnv* env) {
 
         resumeAll = reinterpret_cast<void (*)(ScopedSuspendAll*)>(dlsym_ex(
                 handle, "_ZN3art16ScopedSuspendAllD1Ev"));
-
-        // Disable this now.
-        // startJit = reinterpret_cast<void(*)(ScopedJitSuspend*)>(
-        //      dlsym_ex(handle, "_ZN3art3jit16ScopedJitSuspendD1Ev"));
-        // stopJit = reinterpret_cast<void(*)(ScopedJitSuspend*)>(dlsym_ex(
-        //      handle, "_ZN3art3jit16ScopedJitSuspendC1Ev"));
-
-        // DisableMovingGc = reinterpret_cast<void(*)(void*)>(dlsym_ex(handle,
-        //      "_ZN3art2gc4Heap15DisableMovingGcEv"));
     }
 
     LOGV("addWeakGloablReference: %p", addWeakGloablReference);
 }
 
+/**
+ * 这里的思路，>=7.0 用 jit_compiler 手动编译目标ArtMethod，这样入口就确定了,
+ * 直接inline hook这个quick_code入口就可以实现稳定hook，到了8.0以上入口替换就稳多了.
+ * @param self art::Thread对象的 Native 地址
+ */
 jboolean epic_compile(JNIEnv* env, jclass, jobject method, jlong self) {
-    LOGV("self from native peer: %p, from register: %p", 
-        reinterpret_cast<void*>(self), __self());
+    LOGV(("self from native peer: %p, from register: %p",
+            reinterpret_cast<void*>(self), __self());
 
     jlong art_method = (jlong) env->FromReflectedMethod(method);
 
+    // ArtMethod.compile是通过调用JIT的 jit_compile_method 来完成方法编译的，
     bool ret;
     if (api_level >= 29) {
         ret = ((JIT_COMPILE_METHOD2) jit_compile_method_)(jit_compiler_handle_,
-                                                          reinterpret_cast<void*>(art_method),
-                                                          reinterpret_cast<void*>(self), 
-                                                          false, 
-                                                          false);
+                                                reinterpret_cast<void*>(art_method),
+                                                reinterpret_cast<void*>(self), 
+                                                false, 
+                                                false);
     } else {
         ret = ((JIT_COMPILE_METHOD1) jit_compile_method_)(jit_compiler_handle_,
-                                                          reinterpret_cast<void*>(art_method),
-                                                          reinterpret_cast<void*>(self), 
-                                                          false);
-    }
+                                                reinterpret_cast<void*>(art_method),
+                                                reinterpret_cast<void*>(self), 
+                                                false);
+}
     return (jboolean) ret;
 }
 
@@ -333,15 +352,18 @@ void epic_memcpy(JNIEnv* env, jclass, jlong src, jlong dest, jint length) {
     }
 }
 
+/**
+ * 把 src 中的数据，存入 dest 地址中
+ */
 void epic_memput(JNIEnv* env, jclass, jbyteArray src, jlong dest) {
-    jbyte* srcPnt = env->GetByteArrayElements(src, 0);
+    jbyte* srcPnt = env->GetByteArrayElements(src, JNI_FALSE);
     jsize length = env->GetArrayLength(src);
     unsigned char* destPnt = (unsigned char*) dest;
     for (int i = 0; i < length; ++i) {
         // LOGV("put %d with %d", i, *(srcPnt + i));
         destPnt[i] = (unsigned char) srcPnt[i];
     }
-    env->ReleaseByteArrayElements(src, srcPnt, 0); // TODO: ing......
+    env->ReleaseByteArrayElements(src, srcPnt, 0);
 }
 
 jbyteArray epic_memget(JNIEnv* env, jclass, jlong src, jint length) {
@@ -349,8 +371,8 @@ jbyteArray epic_memget(JNIEnv* env, jclass, jlong src, jint length) {
     if (dest == NULL) {
         return NULL;
     }
-    unsigned char* destPnt = (unsigned char*) env->GetByteArrayElements(dest, 0);
-    unsigned char* srcPnt = (unsigned char*) src;
+    uint8_t* destPnt = (unsigned char*) env->GetByteArrayElements(dest, JNI_FALSE);
+    uint8_t* srcPnt = (unsigned char*) src;
     for (int i = 0; i < length; ++i) {
         destPnt[i] = srcPnt[i];
     }
@@ -387,19 +409,82 @@ jlong epic_malloc(JNIEnv* env, jclass, jint size) {
     return (jlong) ptr;
 }
 
-
+/**
+ * @param self 符号所在类中的Field对象
+ * @param address 地址
+ */
 jobject epic_getobject(JNIEnv* env, jclass clazz, jlong self, jlong address) {
     JavaVM* vm;
     env->GetJavaVM(&vm);
     LOGV("java vm: %p, self: %p, address: %p", vm, (void*) self, (void*) address);
 
-    jobject object = addWeakGloablReference(vm, (void*) self, (void*) address);
+    jobject object = addWeakGloablReference(vm, reinterpret_cast<void*>(self), 
+                                            reinterpret_cast<void*>(address));
     return object;
 }
 
+/**
+ * 获取Java中Method对象(art::mirror::ArtMethod)地址
+ * @param method 来自于Java层的 Method 对象
+ */
 jlong epic_getMethodAddress(JNIEnv* env, jclass clazz, jobject method) {
-    jlong art_method = (jlong) env->FromReflectedMethod(method);
-    return art_method;
+    // 该 struct _jmethodID 是一个不透明的数据结构，查找源代码可以知道是一个 struct Method，
+    // 代表的是一个 Java Method 对象在 Native 层中的一个结构体对象：
+    // struct Method {
+    //   ClassObject* clazz; // 代表这个方法所属的类
+    //   u4 accessFlags;     // 访问标识符， 定义是public？ native？synchronized？
+    //   u2 methodIndex;     // index，在 ClassObject 中一个保存Method对象的数组的位置。
+    //   u2 registersSize;   // 仅对native方法有用，保存方法的参数的个数。
+    //   u2 outsSize;        // unknown， 不重要
+    //   u2 insSize;         // unknown， 不重要
+    //   const char* name;   // 方法名
+    //   DexProto prototype;//我们可以理解这是一个代表该方法签名的字符串(包含返回值以及参数类型)
+    //   const char* shorty; // 跟上面的意义，方法的签名，like：（ILjava/lang/String）V
+    //   const u2* insns;  // 方法的指令代码
+    //   int jniArgInfo;  // jni参数信息，好像没啥用
+    //   // native函数指针，可能是真正的native函数，也可能是JNI桥接函数
+    //   DalvikBridgeFunc nativeFunc; // hook或替换的重点字段
+    //   bool fastJni;   // unknown， 不重要
+    //   bool noRef;     // unknown， 不重要
+    //   bool shouldTrace;   // unknown， 不重要
+    //   const RegisterMap* registerMap;   // unknown， 不重要
+    //   bool inProfile;   // unknown， 不重要
+    // };
+    // 得到 jmethodID 之后，接下来要找到这个结构体里面的 nativeFuc 指针，这个指针可能指向该方法
+    // 对应的 native函数，也可能指向一个桥接函数。简单的说就是，在 Dalvik 下面，指向的是桥接函数;
+    // 在 Art 下，指向的是 native函数。
+    // - 至于这个桥接函数，它的声明如下:
+    // typedef void (＊DalvikBridgeFunc)(const u4* args, 
+    //                                  JValue* pResult, 
+    //                                  const Method* method, 
+    //                                  struct Thread* self);
+    // 这个桥接函数的参数我解释一下：
+    // args: 存储的是调研native方法传过来的参数，对于非static方法，args[0]存储的是this对象，
+    //       args[1]存储的是第一个参数值，args[2]存储的是第二个参数值，以此类推，对于static
+    //       对象，args[0]存储的是第一个参数值，args[1]存储的是第二个参数值.
+    // pResult: 存储函数的返回值
+    // method: 存储与该桥接函数对应的method对象
+    // - 对于native函数，这个就简单了，看下面的代码就一目了然了:
+    // static JNINativeMethod gMethods[] = {
+    //   {
+    //     "hookNativeMethod", 
+    //     "(Ljava/lang/Object;Ljava/lang/String;Z)Z", 
+    //     (void*) native_hook
+    //   }
+    // };
+    // void native_hook(JNIEnv* env, 
+    //                  jclass clazz, 
+    //                  jobject method, 
+    //                  jstring pkg,            
+    //                  jboolean isArt)
+    // env->RegisterNatives(javaClass, gMethods, 1) 
+    // 在Art虚拟机下，Method结构体中存储的 nativeFuc 指针指向的就是这个 native_hook 函数.
+
+    // 我们重点关注的是art虚拟机，即：替换 nativeFuc 指针，这里返回的是 art_method，
+    // 即该结构体的首地址
+    jmethodID methodId = env->FromReflectedMethod(method);
+    jlong art_method = reinterpret_cast<jlong>(methodId);
+    return art_method; // 返回 struct method首地址
 }
 
 jboolean epic_isGetObjectAvaliable(JNIEnv*, jclass) {
@@ -458,28 +543,102 @@ jboolean epic_activate(JNIEnv* env, jclass jclazz, jlong jumpToAddress,
 }
 
 static JNINativeMethod dexposedMethods[] = {
-        {"mmap",                 "(I)J",                           (void*) epic_mmap},
-        {"munmap",               "(JI)Z",                          (void*) epic_munmap},
-        {"memcpy",               "(JJI)V",                         (void*) epic_memcpy},
-        {"memput",               "([BJ)V",                         (void*) epic_memput},
-        {"memget",               "(JI)[B",                         (void*) epic_memget},
-        {"munprotect",           "(JJ)Z",                          (void*) epic_munprotect},
-        {"getMethodAddress",     "(Ljava/lang/reflect/Member;)J",  (void*) epic_getMethodAddress},
-        {"cacheflush",           "(JJ)Z",                          (void*) epic_cacheflush},
-        {"malloc",               "(I)J",                           (void*) epic_malloc},
-        {"getObjectNative",      "(JJ)Ljava/lang/Object;",         (void*) epic_getobject},
-        {"compileMethod",        "(Ljava/lang/reflect/Member;J)Z", (void*) epic_compile},
-        {"suspendAll",           "()J",                            (void*) epic_suspendAll},
-        {"resumeAll",            "(J)V",                           (void*) epic_resumeAll},
-        {"stopJit",              "()J",                            (void*) epic_stopJit},
-        {"startJit",             "(J)V",                           (void*) epic_startJit},
-        {"disableMovingGc",      "(I)V",                           (void*) epic_disableMovingGc},
-        {"activateNative",       "(JJJJ[B)Z",                      (void*) epic_activate},
-        {"isGetObjectAvailable", "()Z",                            (void*) epic_isGetObjectAvaliable}
+    {
+        "mmap",
+        "(I)J",
+        (void*) epic_mmap
+    },
+    {
+        "munmap",
+        "(JI)Z",
+        (void*) epic_munmap
+    },
+    {
+        "memcpy",
+        "(JJI)V",
+        (void*) epic_memcpy
+    },
+    {
+        "memput",
+        "([BJ)V",
+        (void*) epic_memput
+    },
+    {
+        "memget",
+        "(JI)[B",
+        (void*) epic_memget
+    },
+    {
+        "munprotect",
+        "(JJ)Z",
+        (void*) epic_munprotect
+    },
+    {
+        "getMethodAddress",
+        "(Ljava/lang/reflect/Member;)J",
+        (void*) epic_getMethodAddress
+    },
+    {
+        "cacheflush",
+        "(JJ)Z",
+        (void*) epic_cacheflush
+    },
+    {
+        "malloc",
+        "(I)J",
+        (void*) epic_malloc
+    },
+    {
+        "getObjectNative",
+        "(JJ)Ljava/lang/Object;",
+        (void*) epic_getobject},
+    
+    {
+        "compileMethod",
+        "(Ljava/lang/reflect/Member;J)Z",
+        (void*) epic_compile
+    },
+
+    {
+        "suspendAll",
+        "()J", (void*)
+        epic_suspendAll
+    },
+    {
+        "resumeAll",
+        "(J)V",
+        (void*) epic_resumeAll
+    },
+    {
+        "stopJit",
+        "()J",
+        (void*) epic_stopJit
+    },
+    {
+        "startJit",
+        "(J)V",
+        (void*) epic_startJit
+    },
+    {
+        "disableMovingGc",
+        "(I)V",
+        (void*) epic_disableMovingGc},
+    {
+        "activateNative",
+        "(JJJJ[B)Z",
+        (void*) epic_activate
+    },
+    {
+        "isGetObjectAvailable",
+        "()Z",
+        (void*) epic_isGetObjectAvaliable
+    }
 };
 
-static int registerNativeMethods(JNIEnv* env, const char* className,
-                                 JNINativeMethod* gMethods, int numMethods) {
+static int registerNativeMethods(JNIEnv* env, 
+                                 const char* className,
+                                 JNINativeMethod* gMethods, 
+                                 int numMethods) {
 
     jclass clazz = env->FindClass(className);
     if (clazz == NULL) {
@@ -500,9 +659,8 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* reserved) {
         return -1;
     }
 
-    if (!registerNativeMethods(env, JNIHOOK_CLASS, dexposedMethods,
-            sizeof(dexposedMethods) / sizeof(dexposedMethods[0]))) {
-                
+    auto num = sizeof(dexposedMethods) / sizeof(dexposedMethods[0])
+    if (!registerNativeMethods(env, JNIHOOK_CLASS, dexposedMethods, num)) {
         return -1;
     }
 
