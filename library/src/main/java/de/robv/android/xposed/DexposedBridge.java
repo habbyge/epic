@@ -58,7 +58,7 @@ public final class DexposedBridge {
                     Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
 
                 // 这个起始可以废弃掉了，因为<=5.0的系统，基本上没有了
-                System.loadLibrary("dexposed"); 
+                System.loadLibrary("dexposed");
             } else {
                 throw new RuntimeException("unsupported api level: " 
                         + Build.VERSION.SDK_INT);
@@ -188,7 +188,7 @@ public final class DexposedBridge {
         return unhooks;
     }
 
-    public static XC_MethodHook.Unhook findAndHookMethod(Class<?> clazz, 
+    public static XC_MethodHook.Unhook findAndHookMethod(Class<?> clazz,
             String methodName, Object... parameterTypesAndCallback) {
                                                              
         if (parameterTypesAndCallback.length == 0 || 
@@ -196,6 +196,14 @@ public final class DexposedBridge {
                 instanceof XC_MethodHook))
 
             throw new IllegalArgumentException("no callback defined");
+        }
+
+        XC_MethodHook callback = (XC_MethodHook) 
+                parameterTypesAndCallback[parameterTypesAndCallback.length - 1];
+
+        Method m = XposedHelpers.findMethodExact(clazz, 
+                                                 methodName, 
+                                                 parameterTypesAndCallback);
 
         XC_MethodHook callback = (XC_MethodHook) 
                 parameterTypesAndCallback[parameterTypesAndCallback.length - 1];
@@ -204,6 +212,7 @@ public final class DexposedBridge {
                 methodName, parameterTypesAndCallback);
 
         XC_MethodHook.Unhook unhook = hookMethod(m, callback);
+
         synchronized (allUnhookCallbacks) {
             allUnhookCallbacks.add(unhook);
         }
@@ -229,8 +238,7 @@ public final class DexposedBridge {
         return unhooks;
     }
 
-
-    public static Object handleHookedArtMethod(Object artMethodObject, 
+    public static Object handleHookedArtMethod(Object artMethodObject,
                                                Object thisObject, 
                                                Object[] args) {
 
@@ -300,11 +308,13 @@ public final class DexposedBridge {
             } catch (Throwable t) {
                 DexposedBridge.log(t);
 
-                // reset to last result (ignoring what the unexpectedly exiting callback did)
-                if (lastThrowable == null)
+                // reset to last result (ignoring what the unexpectedly 
+                // exiting callback did)
+                if (lastThrowable == null) {
                     param.setResult(lastResult);
-                else
+                } else {
                     param.setThrowable(lastThrowable);
+                }
             }
         } while (--afterIdx >= 0);
 
@@ -363,7 +373,7 @@ public final class DexposedBridge {
         final int callbacksLength = callbacksSnapshot.length;
         if (callbacksLength == 0) {
             try {
-                return invokeOriginalMethodNative(method, 
+                return invokeOriginalMethodNative(method,
                         originalMethodId, 
                         additionalInfo.parameterTypes,
                         additionalInfo.returnType, 
@@ -426,7 +436,8 @@ public final class DexposedBridge {
             } catch (Throwable t) {
                 DexposedBridge.log(t);
 
-                // reset to last result (ignoring what the unexpectedly exiting callback did)
+                // reset to last result (ignoring what the 
+                // unexpectedly exiting callback did)
                 if (lastThrowable == null)
                     param.setResult(lastResult);
                 else
@@ -445,7 +456,7 @@ public final class DexposedBridge {
     private native static Object invokeSuperNative(Object obj, Object[] args, 
                                                    Member method, 
                                                    Class<?> declaringClass,
-                                                   Class<?>[] parameterTypes, 
+                                                   Class<?>[] parameterTypes,
                                                    Class<?> returnType, 
                                                    int slot)
                                                 throws IllegalAccessException, 
@@ -459,7 +470,7 @@ public final class DexposedBridge {
             int slot = 0;
             if (!Runtime.isArt()) {
                 //get the super method slot
-                Method m = XposedHelpers.findMethodExact(obj.getClass().getSuperclass(), 
+                Method m = XposedHelpers.findMethodExact(obj.getClass().getSuperclass(),
                         method.getName(), ((Method) method).getParameterTypes());
 
                 slot = (int) getIntField(m, "slot");
@@ -613,7 +624,7 @@ public final class DexposedBridge {
         final Class<?>[] parameterTypes;
         final Class<?> returnType;
 
-        private AdditionalHookInfo(CopyOnWriteSortedSet<XC_MethodHook> callbacks, 
+        private AdditionalHookInfo(CopyOnWriteSortedSet<XC_MethodHook> callbacks,
                                    Class<?>[] parameterTypes, 
                                    Class<?> returnType) {
 

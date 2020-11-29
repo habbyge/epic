@@ -283,12 +283,14 @@ jboolean epic_compile(JNIEnv* env, jclass, jobject method, jlong self) {
                                                 reinterpret_cast<void*>(art_method),
                                                 reinterpret_cast<void*>(self), 
                                                 false);
-}
+    }
     return (jboolean) ret;
 }
 
 jlong epic_suspendAll(JNIEnv*, jclass) {
-    ScopedSuspendAll* scopedSuspendAll = (ScopedSuspendAll*) malloc(sizeof(ScopedSuspendAll));
+    ScopedSuspendAll* scopedSuspendAll = (ScopedSuspendAll*) 
+            malloc(sizeof(ScopedSuspendAll));
+
     suspendAll(scopedSuspendAll, "stop_jit");
     return reinterpret_cast<jlong>(scopedSuspendAll);
 }
@@ -299,7 +301,9 @@ void epic_resumeAll(JNIEnv* env, jclass, jlong obj) {
 }
 
 jlong epic_stopJit(JNIEnv*, jclass) {
-    ScopedJitSuspend* scopedJitSuspend = (ScopedJitSuspend*) malloc(sizeof(ScopedJitSuspend));
+    ScopedJitSuspend* scopedJitSuspend = (ScopedJitSuspend*) 
+            malloc(sizeof(ScopedJitSuspend));
+
     stopJit(scopedJitSuspend);
     return reinterpret_cast<jlong >(scopedJitSuspend);
 }
@@ -493,8 +497,10 @@ jboolean epic_isGetObjectAvaliable(JNIEnv*, jclass) {
 
 jlong pc, jlong sizeOfDirectJump,
 
-jboolean epic_activate(JNIEnv* env, jclass jclazz, jlong jumpToAddress, 
-                       jlong sizeOfBridgeJump, jbyteArray code) {
+jboolean epic_activate(JNIEnv* env, jclass jclazz, 
+                       jlong jumpToAddress, 
+                       jlong sizeOfBridgeJump, 
+                       jbyteArray code) {
 
     // fetch the array, we can not call this when thread suspend(may lead deadlock)
     // 获取Java层的字节数组：code，转换为JNI能用的字节数组 和 长度

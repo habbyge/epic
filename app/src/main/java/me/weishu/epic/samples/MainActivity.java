@@ -19,7 +19,6 @@ import me.weishu.epic.samples.tests.TestManager;
 import me.weishu.epic.samples.tests.TestSuite;
 
 public class MainActivity extends Activity {
-
     private static final String TAG = "MainActivity";
 
     ExpandableListView listView;
@@ -36,7 +35,6 @@ public class MainActivity extends Activity {
         allSuites = TestManager.getInstance().getAllSuites();
         ExpandableListAdapter adapter = new MyAdapter();
         listView.setAdapter(adapter);
-
     }
 
     private class MyAdapter extends BaseExpandableListAdapter {
@@ -77,8 +75,12 @@ public class MainActivity extends Activity {
         }
 
         @Override
-        public View getGroupView(int groupPosition, boolean isExpanded, View convertView, ViewGroup parent) {
-            View parentView = View.inflate(parent.getContext(), R.layout.parent_layout, null);
+        public View getGroupView(int groupPosition, boolean isExpanded, 
+                                 View convertView, ViewGroup parent) {
+                                     
+            View parentView = View.inflate(parent.getContext(), 
+                    R.layout.parent_layout, null);
+
             TextView t = parentView.findViewById(R.id.text);
             t.setText(getGroup(groupPosition).getName());
 
@@ -92,10 +94,15 @@ public class MainActivity extends Activity {
         }
 
         @Override
-        public View getChildView(int groupPosition, int childPosition, boolean isLastChild, View convertView, ViewGroup parent) {
+        public View getChildView(int groupPosition, int childPosition, 
+                                 boolean isLastChild, View convertView, 
+                                 ViewGroup parent) {
+
             final TestCase child = getChild(groupPosition, childPosition);
 
-            final View childView = View.inflate(parent.getContext(), R.layout.child_layout, null);
+            final View childView = View.inflate(parent.getContext(), 
+                    R.layout.child_layout, null);
+
             final TextView title = childView.findViewById(R.id.label);
             title.setText(child.getName());
 
@@ -109,11 +116,14 @@ public class MainActivity extends Activity {
 
             Button validate = childView.findViewById(R.id.validate);
             validate.setOnClickListener(new View.OnClickListener() {
+
                 @Override
                 public void onClick(View v) {
                     boolean validate = child.validate();
-                    final int color = v.getContext().getResources().getColor(validate ?
-                            android.R.color.holo_green_light : android.R.color.holo_red_light);
+                    final int color = v.getContext().getResources().getColor(
+                            validate ? android.R.color.holo_green_light 
+                            : android.R.color.holo_red_light);
+                            
                     childView.setBackgroundColor(color);
                 }
             });

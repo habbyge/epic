@@ -60,7 +60,8 @@ public class ClassUtils {
     /**
      * <p>The inner class separator String: {@code "$"}.</p>
      */
-    public static final String INNER_CLASS_SEPARATOR = String.valueOf(INNER_CLASS_SEPARATOR_CHAR);
+    public static final String INNER_CLASS_SEPARATOR = 
+            String.valueOf(INNER_CLASS_SEPARATOR_CHAR);
 
     /**
      * <p>Empty string.</p>
@@ -70,7 +71,8 @@ public class ClassUtils {
     /**
      * Maps primitive {@code Class}es to their corresponding wrapper {@code Class}.
      */
-    private static final Map<Class<?>, Class<?>> primitiveWrapperMap = new HashMap<Class<?>, Class<?>>();
+    private static final Map<Class<?>, Class<?>> primitiveWrapperMap 
+            = new HashMap<Class<?>, Class<?>>();
 
     static {
         primitiveWrapperMap.put(Boolean.TYPE, Boolean.class);
@@ -87,7 +89,8 @@ public class ClassUtils {
     /**
      * Maps wrapper {@code Class}es to their corresponding primitive types.
      */
-    private static final Map<Class<?>, Class<?>> wrapperPrimitiveMap = new HashMap<Class<?>, Class<?>>();
+    private static final Map<Class<?>, Class<?>> wrapperPrimitiveMap 
+            = new HashMap<Class<?>, Class<?>>();
 
     static {
         for (Class<?> primitiveClass : primitiveWrapperMap.keySet()) {
@@ -99,14 +102,18 @@ public class ClassUtils {
     }
 
     /**
-     * Maps a primitive class name to its corresponding abbreviation used in array class names.
+     * Maps a primitive class name to its corresponding 
+     * abbreviation used in array class names.
      */
-    private static final Map<String, String> abbreviationMap = new HashMap<String, String>();
+    private static final Map<String, String> abbreviationMap 
+            = new HashMap<String, String>();
 
     /**
-     * Maps an abbreviation used in array class names to corresponding primitive class name.
+     * Maps an abbreviation used in array class names 
+     * to corresponding primitive class name.
      */
-    private static final Map<String, String> reverseAbbreviationMap = new HashMap<String, String>();
+    private static final Map<String, String> reverseAbbreviationMap
+            = new HashMap<String, String>();
 
     /**
      * Add primitive type abbreviation to maps of abbreviations.
@@ -208,7 +215,9 @@ public class ClassUtils {
                 arrayPrefix.append("[]");
             }
             // Strip Object type encoding
-            if (className.charAt(0) == 'L' && className.charAt(className.length() - 1) == ';') {
+            if (className.charAt(0) == 'L' && 
+                    className.charAt(className.length() - 1) == ';') {
+
                 className = className.substring(1, className.length() - 1);
             }
         }
@@ -218,8 +227,10 @@ public class ClassUtils {
         }
 
         int lastDotIdx = className.lastIndexOf(PACKAGE_SEPARATOR_CHAR);
-        int innerIdx = className.indexOf(
-                INNER_CLASS_SEPARATOR_CHAR, lastDotIdx == -1 ? 0 : lastDotIdx + 1);
+
+        int innerIdx = className.indexOf(INNER_CLASS_SEPARATOR_CHAR, 
+                    lastDotIdx == -1 ? 0 : lastDotIdx + 1);
+
         String out = className.substring(lastDotIdx + 1);
         if (innerIdx != -1) {
             out = out.replace(INNER_CLASS_SEPARATOR_CHAR, PACKAGE_SEPARATOR_CHAR);
@@ -307,7 +318,9 @@ public class ClassUtils {
             className = className.substring(1);
         }
         // Strip Object type encoding
-        if (className.charAt(0) == 'L' && className.charAt(className.length() - 1) == ';') {
+        if (className.charAt(0) == 'L' && 
+                className.charAt(className.length() - 1) == ';') {
+
             className = className.substring(1);
         }
 
@@ -371,7 +384,9 @@ public class ClassUtils {
      * @param cls             the class to look up, may be {@code null}
      * @param interfacesFound the {@code Set} of interfaces for the class
      */
-    private static void getAllInterfaces(Class<?> cls, HashSet<Class<?>> interfacesFound) {
+    private static void getAllInterfaces(Class<?> cls, 
+            HashSet<Class<?>> interfacesFound) {
+
         while (cls != null) {
             Class<?>[] interfaces = cls.getInterfaces();
 
@@ -457,8 +472,11 @@ public class ClassUtils {
      * @return the class represented by {@code className} using the {@code classLoader}
      * @throws ClassNotFoundException if the class is not found
      */
-    public static Class<?> getClass(
-            ClassLoader classLoader, String className, boolean initialize) throws ClassNotFoundException {
+    public static Class<?> getClass(ClassLoader classLoader, 
+                                    String className, 
+                                    boolean initialize) 
+                                    throws ClassNotFoundException {
+
         try {
             Class<?> clazz;
             if (abbreviationMap.containsKey(className)) {
@@ -474,8 +492,9 @@ public class ClassUtils {
 
             if (lastDotIndex != -1) {
                 try {
-                    return getClass(classLoader, className.substring(0, lastDotIndex) +
-                                    INNER_CLASS_SEPARATOR_CHAR + className.substring(lastDotIndex + 1),
+                    return getClass(classLoader, className.substring(0, lastDotIndex) 
+                            + INNER_CLASS_SEPARATOR_CHAR 
+                            + className.substring(lastDotIndex + 1),
                             initialize);
                 } catch (ClassNotFoundException ex2) { // NOPMD
                     // ignore exception
@@ -498,7 +517,10 @@ public class ClassUtils {
      * @return the class represented by {@code className} using the {@code classLoader}
      * @throws ClassNotFoundException if the class is not found
      */
-    public static Class<?> getClass(ClassLoader classLoader, String className) throws ClassNotFoundException {
+    public static Class<?> getClass(ClassLoader classLoader, 
+                                    String className) 
+                                    throws ClassNotFoundException {
+
         return getClass(classLoader, className, true);
     }
 
@@ -510,7 +532,8 @@ public class ClassUtils {
      * and "{@code [Ljava.util.Map$Entry;}".
      *
      * @param className the class name
-     * @return the class represented by {@code className} using the current thread's context class loader
+     * @return the class represented by {@code className} using the current 
+     *         thread's context class loader
      * @throws ClassNotFoundException if the class is not found
      */
     public static Class<?> getClass(String className) throws ClassNotFoundException {
@@ -525,12 +548,20 @@ public class ClassUtils {
      *
      * @param className  the class name
      * @param initialize whether the class must be initialized
-     * @return the class represented by {@code className} using the current thread's context class loader
+     * @return the class represented by {@code className} using the current 
+     *         thread's context class loader
      * @throws ClassNotFoundException if the class is not found
      */
-    public static Class<?> getClass(String className, boolean initialize) throws ClassNotFoundException {
+    public static Class<?> getClass(String className, 
+                                    boolean initialize) 
+                                    throws ClassNotFoundException {
+
         ClassLoader contextCL = Thread.currentThread().getContextClassLoader();
-        ClassLoader loader = contextCL == null ? ClassUtils.class.getClassLoader() : contextCL;
+
+        ClassLoader loader = contextCL == null 
+                ? ClassUtils.class.getClassLoader() 
+                : contextCL;
+
         return getClass(loader, className, initialize);
     }
 
@@ -564,8 +595,8 @@ public class ClassUtils {
     }
 
     /**
-     * <p>Converts an array of {@code Object} in to an array of {@code Class} objects.
-     * If any of these objects is null, a null element will be inserted into the array.</p>
+     * Converts an array of {@code Object} in to an array of {@code Class} objects.
+     * If any of these objects is null, a null element will be inserted into the array.
      *
      * <p>This method returns {@code null} for a {@code null} input array.</p>
      *
@@ -646,5 +677,4 @@ public class ClassUtils {
     public static boolean isEmpty(CharSequence cs) {
         return cs == null || cs.length() == 0;
     }
-
 }

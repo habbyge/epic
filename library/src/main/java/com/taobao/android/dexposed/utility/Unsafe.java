@@ -61,7 +61,9 @@ public final class Unsafe {
     @SuppressWarnings("unchecked")
     public static int arrayIndexScale(Class cls) {
         try {
-            return (int) unsafeClass.getDeclaredMethod("arrayIndexScale", Class.class).invoke(unsafe, cls);
+            return (int) unsafeClass
+                    .getDeclaredMethod("arrayIndexScale", Class.class)
+                    .invoke(unsafe, cls);
         } catch (Exception e) {
             Log.w(TAG, e);
             return 0;
@@ -71,7 +73,9 @@ public final class Unsafe {
     @SuppressWarnings("unchecked")
     public static long objectFieldOffset(Field field) {
         try {
-            return (long) unsafeClass.getDeclaredMethod("objectFieldOffset", Field.class).invoke(unsafe, field);
+            return (long) unsafeClass
+                    .getDeclaredMethod("objectFieldOffset", Field.class)
+                    .invoke(unsafe, field);
         } catch (Exception e) {
             Log.w(TAG, e);
             return 0;
@@ -81,7 +85,9 @@ public final class Unsafe {
     @SuppressWarnings("unchecked")
     public static int getInt(Object array, long offset) {
         try {
-            return (int) unsafeClass.getDeclaredMethod("getInt", Object.class, long.class).invoke(unsafe, array, offset);
+            return (int) unsafeClass
+                    .getDeclaredMethod("getInt", Object.class, long.class)
+                    .invoke(unsafe, array, offset);
         } catch (Exception e) {
             Log.w(TAG, e);
             return 0;
@@ -144,7 +150,8 @@ public final class Unsafe {
     }
 
     /**
-     * get Object from address, refer: http://mishadoff.com/blog/java-magic-part-4-sun-dot-misc-dot-unsafe/
+     * get Object from address, refer: 
+     * http://mishadoff.com/blog/java-magic-part-4-sun-dot-misc-dot-unsafe/
      *
      * @param address the address of a object.
      * @return
