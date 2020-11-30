@@ -80,8 +80,10 @@ public final class Epic {
         return hookMethod(artOrigin);
     }
 
+    /**
+     * 找到需要hook的java方法对应的C/C++层Art虚拟机中额方法对象：ArtMethod.
+     */
     private static boolean hookMethod(ArtMethod artOrigin) {
-
         MethodInfo methodInfo = new MethodInfo();
         methodInfo.isStatic = Modifier.isStatic(artOrigin.getModifiers());
         final Class<?>[] parameterTypes = artOrigin.getParameterTypes();
@@ -102,7 +104,8 @@ public final class Epic {
 
         artOrigin.ensureResolved();
 
-        long originEntry = artOrigin.getEntryPointFromQuickCompiledCode();
+        // 如果要hook的目标方法还未编译，则调用 ArtMethod.compile()主动触发编译
+        long originEntry = artOrigin.getEntryPointFromQuickCompiledCode(); // TODO: ing......
         if (originEntry == ArtMethod.getQuickToInterpreterBridge()) {
             Logger.i(TAG, "this method is not compiled, compile it now. current entry: 0x" + Long.toHexString(originEntry));
             boolean ret = artOrigin.compile();
@@ -139,39 +142,6 @@ public final class Epic {
             return ret;
         }
     }
-
-    /*
-    private static boolean hookInterpreterBridge(ArtMethod artOrigin) {
-
-        String identifier = artOrigin.getIdentifier();
-        ArtMethod backupMethod = artOrigin.backup();
-
-        Logger.d(TAG, "backup method address:" + Debug.addrHex(backupMethod.getAddress()));
-        Logger.d(TAG, "backup method entry :" + Debug.addrHex(backupMethod.getEntryPointFromQuickCompiledCode()));
-
-        List<ArtMethod> backupList = backupMethodsMapping.get(identifier);
-        if (backupList == null) {
-            backupList = new LinkedList<ArtMethod>();
-            backupMethodsMapping.put(identifier, backupList);
-        }
-        backupList.add(backupMethod);
-
-        long originalEntryPoint = ShellCode.toMem(artOrigin.getEntryPointFromQuickCompiledCode());
-        Logger.d(TAG, "originEntry Point(bridge):" + Debug.addrHex(originalEntryPoint));
-
-        originalEntryPoint += 16;
-        Logger.d(TAG, "originEntry Point(offset8):" + Debug.addrHex(originalEntryPoint));
-
-        if (!scripts.containsKey(originalEntryPoint)) {
-            scripts.put(originalEntryPoint, new Trampoline(ShellCode, artOrigin));
-        }
-        Trampoline trampoline = scripts.get(originalEntryPoint);
-
-        boolean ret = trampoline.install();
-        Logger.i(TAG, "hook Method result:" + ret);
-        return ret;
-
-    }*/
 
     public synchronized static ArtMethod getBackMethod(ArtMethod origin) {
         String identifier = origin.getIdentifier();

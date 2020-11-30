@@ -444,6 +444,7 @@ jboolean epic_activate(JNIEnv* env, jclass jclazz,
     jboolean result = epic_munprotect(env, jclazz, jumpToAddress, sizeOfDirectJump);
     if (result) {
         unsigned char* destPnt = (unsigned char*) jumpToAddress;
+
         for (int i = 0; i < length; ++i) {
             destPnt[i] = (unsigned char) srcPnt[i];
         }
