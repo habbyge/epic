@@ -332,7 +332,7 @@ static void* fake_dlopen(const char* filename, int flags) {
 
 /**
  * 从 符号表(节) 中获取 name 指定的符号，这里需要注意的是：
- * 1. 符号表中的 sym->st_name 字段不是一个字符串名称，而是一个index，该位置对应的就是符号名称.
+ * 1. 符号表中的 sym->st_name 字段不仅仅是一个字符串名称，还是一个index，该位置对应的就是符号名称.
  * 2. sym->st_value 字段表示的是该字符对应的地址偏移.
  */
 static void* fake_dlsym(void* handle, const char* name) {

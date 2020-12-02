@@ -17,8 +17,6 @@
 
 package com.taobao.android.dexposed.utility;
 
-import android.util.Log;
-
 import java.lang.reflect.Method;
 
 import me.weishu.epic.art.method.ArtMethod;
@@ -63,11 +61,11 @@ public class Runtime {
             Method method = String.class.getDeclaredMethod("hashCode");
             ArtMethod artMethodStruct = ArtMethod.of(method);
             
-            long entryPointFromQuickCompiledCode = 
-                    artMethodStruct.getEntryPointFromQuickCompiledCode();
+            long entryPointFromQuickCompiledCode = artMethodStruct
+                .getEntryPointFromQuickCompiledCode();
 
-            Logger.w("Runtime", "isThumb2, entry: " + Long.toHexString(
-                    entryPointFromQuickCompiledCode));
+            Logger.w("Runtime", "isThumb2, entry: " + 
+                    Long.toHexString(entryPointFromQuickCompiledCode));
 
             isThumb = ((entryPointFromQuickCompiledCode & 1) == 1);
             return isThumb;

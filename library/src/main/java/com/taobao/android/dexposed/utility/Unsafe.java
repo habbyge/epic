@@ -97,9 +97,8 @@ public final class Unsafe {
     @SuppressWarnings("unchecked")
     public static long getLong(Object array, long offset) {
         try {
-            return (long) unsafeClass
-                    .getDeclaredMethod("getLong", Object.class, long.class)
-                    .invoke(unsafe, array, offset);
+            return (long) unsafeClass.getDeclaredMethod("getLong", 
+                    Object.class, long.class).invoke(unsafe, array, offset);
         } catch (Exception e) {
             Log.w(TAG, e);
             return 0;
@@ -109,14 +108,12 @@ public final class Unsafe {
     @SuppressWarnings("unchecked")
     public static void putLong(Object array, long offset, long value) {
         try {
-            unsafeClass.getDeclaredMethod("putLongVolatile", 
-                    Object.class, long.class, long.class)
-                    .invoke(unsafe, array, offset, value);
+            unsafeClass.getDeclaredMethod("putLongVolatile", Object.class, 
+                    long.class, long.class).invoke(unsafe, array, offset, value);
         } catch (Exception e) {
             try {
-                unsafeClass.getDeclaredMethod(
-                        "putLong", Object.class, long.class, long.class)
-                        .invoke(unsafe, array, offset, value);
+                unsafeClass.getDeclaredMethod("putLong", Object.class, 
+                        long.class, long.class).invoke(unsafe, array, offset, value);
             } catch (Exception e1) {
                 Log.w(TAG, e);
             }
@@ -126,14 +123,12 @@ public final class Unsafe {
     @SuppressWarnings("unchecked")
     public static void putInt(Object array, long offset, int value) {
         try {
-            unsafeClass.getDeclaredMethod("putIntVolatile", 
-                    Object.class, long.class, int.class)
-                    .invoke(unsafe, array, offset, value);
+            unsafeClass.getDeclaredMethod("putIntVolatile", Object.class, 
+                    long.class, int.class).invoke(unsafe, array, offset, value);
         } catch (Exception e) {
             try {
-                unsafeClass.getDeclaredMethod("putIntVolatile", 
-                        Object.class, long.class, int.class)
-                        .invoke(unsafe, array, offset, value);
+                unsafeClass.getDeclaredMethod("putIntVolatile", Object.class, 
+                        long.class, int.class).invoke(unsafe, array, offset, value);
             } catch (Exception e1) {
                 Log.w(TAG, e);
             }

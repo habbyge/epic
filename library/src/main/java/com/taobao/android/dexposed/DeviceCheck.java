@@ -56,7 +56,7 @@ public class DeviceCheck {
                     return "WTF?!";
                 }
                 try {
-                    final String value = (String) get.invoke(systemProperties,
+                    final String value = (String) get.invoke(systemProperties, 
                             SELECT_RUNTIME_PROPERTY,
                             /* Assuming default is */"Dalvik");
                     if (LIB_DALVIK.equals(value)) {
@@ -76,7 +76,8 @@ public class DeviceCheck {
                     return "InvocationTargetException";
                 }
             } catch (NoSuchMethodException e) {
-                return "SystemProperties.get(String key, String def) method is not found";
+                return "SystemProperties.get(String key, 
+                        String def) method is not found";
             }
         } catch (ClassNotFoundException e) {
             return "SystemProperties class is not found";
@@ -148,10 +149,8 @@ public class DeviceCheck {
                 isDeviceSupportable = false;
             }
         } finally {
-            Log.d("hotpatch", "device support is " 
-                    + isDeviceSupportable + "checked" 
-                    + isCheckedDeviceSupport);
-                    
+            Log.d("hotpatch", "device support is " + isDeviceSupportable 
+                    + "checked" + isCheckedDeviceSupport);
             isCheckedDeviceSupport = true;
         }
         return isDeviceSupportable;
@@ -162,8 +161,8 @@ public class DeviceCheck {
         String s1 = null;
         String s2 = null;
         try {
-            Method m = Class.forName("android.os.SystemProperties").getMethod(
-                    "get", String.class);
+            Method m = Class.forName("android.os.SystemProperties")
+                    .getMethod("get", String.class);
             s1 = (String) m.invoke(null, "ro.yunos.version");
             s2 = (String) m.invoke(null, "java.vm.name");
         } catch (NoSuchMethodException a) {
@@ -171,9 +170,9 @@ public class DeviceCheck {
         } catch (IllegalAccessException c) {
         } catch (InvocationTargetException d) {
         }
+
         if ((s2 != null && s2.toLowerCase().contains("lemur")) 
                 || (s1 != null && s1.trim().length() > 0)) {
-                    
             return true;
         } else {
             return false;

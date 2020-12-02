@@ -196,8 +196,10 @@ public class Entry {
      * @param sp stack pointer
      * @return arguments passed to the callee method
      */
-    private static Pair<Object, Object[]> constructArguments(Epic.MethodInfo originMethodInfo, int self,
-                                                             byte[] r1, byte[] r2, byte[] r3, int sp) {
+    private static Pair<Object, Object[]> constructArguments(
+            Epic.MethodInfo originMethodInfo, int self, 
+            byte[] r1, byte[] r2, byte[] r3, int sp) {
+                
         boolean isStatic = originMethodInfo.isStatic;
 
         int numberOfArgs;

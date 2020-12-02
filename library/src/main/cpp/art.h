@@ -23,6 +23,8 @@
 #include <list>
 #include <jni.h>
 
+// 本质上，在二进制文件(libart.so/libart_compile.so)中，
+
 // 这里的 Runtime 定义来自这里：
 // Android 6.0: http://androidxref.com/6.0.0_r5/xref/art/runtime/runtime.h
 // Android 7.0: http://androidxref.com/7.0.0_r1/xref/art/runtime/runtime.h
@@ -30,7 +32,6 @@
 // Android 8.0: http://androidxref.com/8.0.0_r4/xref/art/runtime/runtime.h
 
 struct Runtime_7X {
-
     uint64_t callee_save_methods_[3];
     void* pre_allocated_OutOfMemoryError_;
     void* pre_allocated_NoClassDefFoundError_;

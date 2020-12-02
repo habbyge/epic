@@ -44,7 +44,11 @@ import me.weishu.reflection.Reflection;
 
 import static de.robv.android.xposed.XposedHelpers.getIntField;
 
+/**
+ * Epic项目的入口类
+ */
 public final class DexposedBridge {
+    private static final String TAG = "DexposedBridge";
 
     static {
         try {
@@ -53,18 +57,18 @@ public final class DexposedBridge {
             } else if (android.os.Build.VERSION.SDK_INT > 
                     Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
 
+                // 这个起始可以废弃掉了，因为<=5.0的系统，基本上没有了
                 System.loadLibrary("dexposed");
             } else {
                 throw new RuntimeException("unsupported api level: " 
                         + Build.VERSION.SDK_INT);
             }
+
             Reflection.unseal(AndroidAppHelper.currentApplication());
         } catch (Throwable e) {
             log(e);
         }
     }
-
-    private static final String TAG = "DexposedBridge";
 
     private static final Object[] EMPTY_ARRAY = new Object[0];
     public static final ClassLoader BOOTCLASSLOADER = ClassLoader.getSystemClassLoader();
@@ -108,7 +112,7 @@ public final class DexposedBridge {
                                                   XC_MethodHook callback) {
 
         if (!(hookMethod instanceof Method) && !(hookMethod instanceof Constructor<?>)) {
-            throw new IllegalArgumentException(
+            throw new IllegalArgumentException( // 方法类型不合法
                 "only methods and constructors can be hooked");
         }
 
@@ -160,7 +164,8 @@ public final class DexposedBridge {
      * Removes the callback for a hooked method
      *
      * @param hookMethod The method for which the callback should be removed
-     * @param callback The reference to the callback as specified in {@link #hookMethod}
+     * @param callback 
+     *      The reference to the callback as specified in {@link #hookMethod}
      */
     public static void unhookMethod(Member hookMethod, XC_MethodHook callback) {
         CopyOnWriteSortedSet<XC_MethodHook> callbacks;
@@ -187,9 +192,10 @@ public final class DexposedBridge {
                                                 String methodName, 
                                                 Object... parameterTypesAndCallback) {
                                                              
-        if (parameterTypesAndCallback.length == 0 
-                || !(parameterTypesAndCallback[parameterTypesAndCallback.length - 1] 
-                    instanceof XC_MethodHook)) {
+        if (parameterTypesAndCallback.length == 0 || 
+                !(parameterTypesAndCallback[parameterTypesAndCallback.length - 1] 
+                instanceof XC_MethodHook))
+
             throw new IllegalArgumentException("no callback defined");
         }
 
@@ -199,6 +205,12 @@ public final class DexposedBridge {
         Method m = XposedHelpers.findMethodExact(clazz, 
                                                  methodName, 
                                                  parameterTypesAndCallback);
+
+        XC_MethodHook callback = (XC_MethodHook) 
+                parameterTypesAndCallback[parameterTypesAndCallback.length - 1];
+
+        Method m = XposedHelpers.findMethodExact(clazz, 
+                methodName, parameterTypesAndCallback);
 
         XC_MethodHook.Unhook unhook = hookMethod(m, callback);
 
@@ -217,8 +229,8 @@ public final class DexposedBridge {
         }
     }
 
-    public static Set<XC_MethodHook.Unhook> hookAllConstructors(Class<?> hookClass, 
-                                                                XC_MethodHook callback) {
+    public static Set<XC_MethodHook.Unhook> hookAllConstructors(
+            Class<?> hookClass, XC_MethodHook callback) {
 
         Set<XC_MethodHook.Unhook> unhooks = new HashSet<XC_MethodHook.Unhook>();
         for (Member constructor : hookClass.getDeclaredConstructors()) {
@@ -227,7 +239,7 @@ public final class DexposedBridge {
         return unhooks;
     }
 
-    public static Object handleHookedArtMethod(Object artMethodObject, 
+    public static Object handleHookedArtMethod(Object artMethodObject,
                                                Object thisObject, 
                                                Object[] args) {
 
@@ -257,7 +269,7 @@ public final class DexposedBridge {
         int beforeIdx = 0;
         do {
             try {
-                ((XC_MethodHook) callbacksSnapshot[beforeIdx]).beforeHookedMethod(param);
+                ((XC_MethodHook)callbacksSnapshot[beforeIdx]).beforeHookedMethod(param);
             } catch (Throwable t) {
                 log(t);
 
@@ -268,7 +280,7 @@ public final class DexposedBridge {
             }
 
             if (param.returnEarly) {
-                // skip remaining "before" callbacks and corresponding "after" callbacks
+                //skip remaining "before" callbacks and corresponding "after" callbacks
                 beforeIdx++;
                 break;
             }
@@ -317,9 +329,9 @@ public final class DexposedBridge {
                 final Throwable cause = throwable.getCause();
 
                 // We can not change the exception flow of origin call, rethrow
+                // Logger.e(TAG, "origin call throw exception (not a real crash, just record for debug):", cause);
                 DexposedBridge.<RuntimeException>throwNoCheck(
                         param.getThrowable().getCause(), null);
-
                 return null; //never reach.
             } else {
                 // the exception cause by epic self, just log.
@@ -350,23 +362,24 @@ public final class DexposedBridge {
     /**
      * This method is called as a replacement for hooked methods.
      */
-    private static Object handleHookedMethod(Member method, int originalMethodId, 
+    private static Object handleHookedMethod(Member method, 
+                                             int originalMethodId, 
                                              Object additionalInfoObj,
-                                             Object thisObject, Object[] args) 
-                                             throws Throwable {
-                                                 
+                                             Object thisObject, 
+                                             Object[] args) throws Throwable {
+
         AdditionalHookInfo additionalInfo = (AdditionalHookInfo) additionalInfoObj;
 
         Object[] callbacksSnapshot = additionalInfo.callbacks.getSnapshot();
         final int callbacksLength = callbacksSnapshot.length;
         if (callbacksLength == 0) {
             try {
-                return invokeOriginalMethodNative(method, 
-                                                  originalMethodId, 
-                                                  additionalInfo.parameterTypes,
-                                                  additionalInfo.returnType, 
-                                                  thisObject, 
-                                                  args);
+                return invokeOriginalMethodNative(method,
+                        originalMethodId, 
+                        additionalInfo.parameterTypes,
+                        additionalInfo.returnType, 
+                        thisObject, 
+                        args);
             } catch (InvocationTargetException e) {
                 throw e.getCause();
             }
@@ -401,11 +414,13 @@ public final class DexposedBridge {
         // call original method if not requested otherwise
         if (!param.returnEarly) {
             try {
-                param.setResult(invokeOriginalMethodNative(method, originalMethodId,
-                                                           additionalInfo.parameterTypes, 
-                                                           additionalInfo.returnType, 
-                                                           param.thisObject, 
-                                                           param.args));
+                param.setResult(invokeOriginalMethodNative(method, 
+                        originalMethodId,
+                        additionalInfo.parameterTypes, 
+                        additionalInfo.returnType, 
+                        param.thisObject, 
+                        param.args));
+
             } catch (InvocationTargetException e) {
                 param.setThrowable(e.getCause());
             }
@@ -442,29 +457,30 @@ public final class DexposedBridge {
     private native static Object invokeSuperNative(Object obj, Object[] args, 
                                                    Member method, 
                                                    Class<?> declaringClass,
-                                                   Class<?>[] parameterTypes, 
-                                                   Class<?> returnType, int slot)
-                                                   throws IllegalAccessException, 
-                                                   IllegalArgumentException,
-                                                   InvocationTargetException;
+                                                   Class<?>[] parameterTypes,
+                                                   Class<?> returnType, 
+                                                   int slot)
+                                                throws IllegalAccessException, 
+                                                IllegalArgumentException,
+                                                InvocationTargetException;
 
-    public static Object invokeSuper(Object obj, Member method, 
-                                     Object... args) 
-                                     throws NoSuchFieldException {
+    public static Object invokeSuper(Object obj, Member method, Object... args) 
+            throws NoSuchFieldException {
 
         try {
             int slot = 0;
             if (!Runtime.isArt()) {
                 //get the super method slot
-                Method m = XposedHelpers.findMethodExact(obj.getClass().getSuperclass(), 
-                                                         method.getName(), 
-                                                         ((Method) method).getParameterTypes());
+                Method m = XposedHelpers.findMethodExact(obj.getClass().getSuperclass(),
+                        method.getName(), ((Method) method).getParameterTypes());
+
                 slot = (int) getIntField(m, "slot");
             }
 
-            return invokeSuperNative(obj, args, method, method.getDeclaringClass(), 
-                                     ((Method) method).getParameterTypes(), 
-                                     ((Method) method).getReturnType(), slot);
+            return invokeSuperNative(obj, args, method, 
+                    method.getDeclaringClass(), 
+                    ((Method) method).getParameterTypes(), 
+                    ((Method) method).getReturnType(), slot);
 
         } catch (IllegalAccessException e) {
             throw new IllegalAccessError(e.getMessage());
@@ -491,33 +507,38 @@ public final class DexposedBridge {
                                                             Class<?> returnType, 
                                                             Object thisObject, 
                                                             Object[] args)
-                                                            throws IllegalAccessException, 
-                                                            IllegalArgumentException, 
-                                                            InvocationTargetException;
+                                                        throws IllegalAccessException, 
+                                                        IllegalArgumentException, 
+                                                        InvocationTargetException;
 
 
     /**
      * Basically the same as {@link Method#invoke}, but calls the original method
-     * as it was before the interception by Xposed. Also, access permissions are not checked.
+     * as it was before the interception by Xposed. Also, access permissions are 
+     * not checked.
      *
      * @param method     Method to be called
      * @param thisObject For non-static calls, the "this" pointer
      * @param args       Arguments for the method call as Object[] array
      * @return The result returned from the invoked method
-     * @throws NullPointerException      if {@code receiver == null} for a non-static method
-     * @throws IllegalAccessException    if this method is not accessible (see {@link AccessibleObject})
-     * @throws IllegalArgumentException  if the number of arguments doesn't match the number of parameters, the receiver
-     *                                   is incompatible with the declaring class, or an argument could not be unboxed
-     *                                   or converted by a widening conversion to the corresponding parameter type
-     * @throws InvocationTargetException if an exception was thrown by the invoked method
+     * @throws NullPointerException if {@code receiver==null} for a non-static method
+     * @throws IllegalAccessException    if this method is not accessible 
+*                                          (see {@link AccessibleObject})
+     * @throws IllegalArgumentException if the number of arguments doesn't match 
+     *      the number of parameters, the receiver is incompatible with the 
+     *      declaring class, or an argument could not be unboxed or converted by 
+     *      a widening conversion to the corresponding parameter type
+     * @throws InvocationTargetException 
+     *      if an exception was thrown by the invoked method
      */
     public static Object invokeOriginalMethod(Member method, 
                                               Object thisObject, 
                                               Object[] args)
-                                              throws NullPointerException, 
-                                              IllegalAccessException, 
-                                              IllegalArgumentException, 
-                                              InvocationTargetException {
+                                            throws NullPointerException, 
+                                            IllegalAccessException, 
+                                            IllegalArgumentException, 
+                                            InvocationTargetException {
+
         if (args == null) {
             args = EMPTY_ARRAY;
         }
@@ -532,7 +553,7 @@ public final class DexposedBridge {
             returnType = null;
         } else {
             throw new IllegalArgumentException(
-                "method must be of type Method or Constructor");
+                    "method must be of type Method or Constructor");
         }
 
         if (Runtime.isArt()) {
@@ -548,11 +569,8 @@ public final class DexposedBridge {
                 DexposedBridge.<RuntimeException>throwNoCheck(e, null);
             }
         }
-        return invokeOriginalMethodNative(method, 0, 
-                                          parameterTypes, 
-                                          returnType, 
-                                          thisObject, 
-                                          args);
+        return invokeOriginalMethodNative(method, 0, parameterTypes, 
+                                          returnType, thisObject, args);
     }
 
     public static class CopyOnWriteSortedSet<E> {
@@ -578,10 +596,8 @@ public final class DexposedBridge {
 
             Object[] newElements = new Object[elements.length - 1];
             System.arraycopy(elements, 0, newElements, 0, index);
-
-            System.arraycopy(elements, index + 1, newElements, index, 
-                             elements.length - index - 1);
-
+            System.arraycopy(elements, index + 1, newElements, 
+                             index, elements.length - index - 1);
             elements = newElements;
             return true;
         }
@@ -592,8 +608,9 @@ public final class DexposedBridge {
 
         private int indexOf(Object o) {
             for (int i = 0; i < elements.length; i++) {
-                if (o.equals(elements[i]))
+                if (o.equals(elements[i])) {
                     return i;
+                }
             }
             return -1;
         }
@@ -608,9 +625,10 @@ public final class DexposedBridge {
         final Class<?>[] parameterTypes;
         final Class<?> returnType;
 
-        private AdditionalHookInfo(CopyOnWriteSortedSet<XC_MethodHook> callbacks, 
-                                   Class<?>[] parameterTypes, Class<?> returnType) {
-                                       
+        private AdditionalHookInfo(CopyOnWriteSortedSet<XC_MethodHook> callbacks,
+                                   Class<?>[] parameterTypes, 
+                                   Class<?> returnType) {
+
             this.callbacks = callbacks;
             this.parameterTypes = parameterTypes;
             this.returnType = returnType;

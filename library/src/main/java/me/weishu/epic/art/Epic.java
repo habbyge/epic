@@ -38,12 +38,13 @@ import me.weishu.epic.art.method.ArtMethod;
 
 /**
  * Hook Center.
+ * 目前的 Android 热更新基本上是采用 "底层替换" 或者是 "类加载"，Sophix 则把这两者进行了结合.
  */
 public final class Epic {
-
     private static final String TAG = "Epic";
 
-    private static final Map<String, ArtMethod> backupMethodsMapping = new ConcurrentHashMap<>();
+    private static final Map<String, ArtMethod> backupMethodsMapping
+            = new ConcurrentHashMap<>();
 
     private static final Map<Long, MethodInfo> originSigs = new ConcurrentHashMap<>();
 
@@ -66,7 +67,8 @@ public final class Epic {
             }
         }
         if (ShellCode == null) {
-            throw new RuntimeException("Do not support this ARCH now!! API LEVEL:" + apiLevel + " thumb2 ? : " + thumb2);
+            throw new RuntimeException("Do not support this ARCH now!! API LEVEL:" 
+                    + apiLevel + " thumb2 ? : " + thumb2);
         }
         Logger.i(TAG, "Using: " + ShellCode.getName());
     }
@@ -105,13 +107,16 @@ public final class Epic {
         artOrigin.ensureResolved();
 
         // 如果要hook的目标方法还未编译，则调用 ArtMethod.compile()主动触发编译
-        long originEntry = artOrigin.getEntryPointFromQuickCompiledCode(); // TODO: ing......
+        long originEntry = artOrigin.getEntryPointFromQuickCompiledCode();
         if (originEntry == ArtMethod.getQuickToInterpreterBridge()) {
-            Logger.i(TAG, "this method is not compiled, compile it now. current entry: 0x" + Long.toHexString(originEntry));
-            boolean ret = artOrigin.compile();
+            Logger.i(TAG, "this method is not compiled, compile it now " + 
+                    "current entry: 0x" + Long.toHexString(originEntry));
+                    
+            boolean ret = artOrigin.compile(); // TODO: 2020/12/1 ing......
             if (ret) {
                 originEntry = artOrigin.getEntryPointFromQuickCompiledCode();
-                Logger.i(TAG, "compile method success, new entry: 0x" + Long.toHexString(originEntry));
+                Logger.i(TAG, "compile method success, new entry: 0x" 
+                        + Long.toHexString(originEntry));
             } else {
                 Logger.e(TAG, "compile method failed...");
                 return false;
@@ -121,8 +126,11 @@ public final class Epic {
 
         ArtMethod backupMethod = artOrigin.backup();
 
-        Logger.i(TAG, "backup method address:" + Debug.addrHex(backupMethod.getAddress()));
-        Logger.i(TAG, "backup method entry :" + Debug.addrHex(backupMethod.getEntryPointFromQuickCompiledCode()));
+        Logger.i(TAG, "backup method address:" +
+                Debug.addrHex(backupMethod.getAddress()));
+
+        Logger.i(TAG, "backup method entry :" + Debug.addrHex(
+                backupMethod.getEntryPointFromQuickCompiledCode()));
 
         ArtMethod backupList = getBackMethod(artOrigin);
         if (backupList == null) {
@@ -131,12 +139,13 @@ public final class Epic {
 
         final long key = originEntry;
         final EntryLock lock = EntryLock.obtain(originEntry);
-        //noinspection SynchronizationOnLocalVariableOrMethodParameter
+        // noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (lock) {
             if (!scripts.containsKey(key)) {
                 scripts.put(key, new Trampoline(ShellCode, originEntry));
             }
             Trampoline trampoline = scripts.get(key);
+            // 安装跳板代码：完成hook
             boolean ret = trampoline.install(artOrigin);
             // Logger.d(TAG, "hook Method result:" + ret);
             return ret;
@@ -158,7 +167,6 @@ public final class Epic {
     }
 
     public static int getQuickCompiledCodeSize(ArtMethod method) {
-
         long entryPoint = ShellCode.toMem(method.getEntryPointFromQuickCompiledCode());
         long sizeInfo1 = entryPoint - 4;
         byte[] bytes = EpicNative.get(sizeInfo1, 4);

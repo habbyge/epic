@@ -113,19 +113,19 @@ public final class EpicNative {
      */
     public static native void disableMovingGc(int api);
 
-
     private EpicNative() {
     }
 
     public static boolean compileMethod(Member method) {
-        final long nativePeer = XposedHelpers.getLongField(Thread.currentThread(),
-                                                           "nativePeer");
+        // Native Thread(art::Thread) 对象地址保存到 Java Thread 对象的 nativePeer 字段
+        final long nativePeer = XposedHelpers.getLongField(
+                    Thread.currentThread(), "nativePeer");
 
         return compileMethod(method, nativePeer);
     }
 
     public static Object getObject(long address) {
-        final long nativePeer = XposedHelpers.getLongField(Thread.currentThread(), 
+        final long nativePeer = XposedHelpers.getLongField(Thread.currentThread(),
                                                            "nativePeer");
         return getObject(nativePeer, address);
     }
@@ -139,7 +139,7 @@ public final class EpicNative {
     public static boolean unmap(long address, int length) {
         Logger.d(TAG, "Removing mapped memory of size " + length 
                 + " at " + addrHex(address));
-                
+
         return munmap(address, length);
     }
 
@@ -164,8 +164,9 @@ public final class EpicNative {
     }
 
     public static void copy(long src, long dst, int length) {
-        Logger.d(TAG, "Copy " + length + " bytes form " + addrHex(src) 
-                 " to " + addrHex(dst));
+        Logger.d(TAG, "Copy " + length 
+                + " bytes form " + addrHex(src) 
+                + " to " + addrHex(dst));
 
         memcpy(src, dst, length);
     }
