@@ -150,8 +150,7 @@
 //#undef NDEBUG
 #define NDEBUG
 #ifdef NDEBUG
-    #define LOGV(...)  ((void)__android_log_print(ANDROID_LOG_INFO, \
-                            "epic.Native", __VA_ARGS__))
+    #define LOGV(...)  ((void)__android_log_print(ANDROID_LOG_INFO, "epic.Native", __VA_ARGS__))
 #else
     #define LOGV(...)
 #endif
