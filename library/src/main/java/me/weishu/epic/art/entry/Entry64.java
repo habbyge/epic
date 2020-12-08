@@ -336,9 +336,12 @@ public class Entry64 {
             Logger.d(TAG, "bridge method:" + bridgeMethod 
                     + ", map:" + bridgeMethodMap);
             Method method = Entry64.class.getDeclaredMethod(bridgeMethod, 
-                                                            long.class, long.class,
-                                                            long.class, long.class, 
-                                                            long.class, long.class, 
+                                                            long.class,
+                                                            long.class,
+                                                            long.class,
+                                                            long.class,
+                                                            long.class,
+                                                            long.class,
                                                             long.class);
             method.setAccessible(true);
             return method;

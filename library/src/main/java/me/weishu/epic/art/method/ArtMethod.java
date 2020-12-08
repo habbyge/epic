@@ -61,8 +61,8 @@ public class ArtMethod {
     private Method method;
 
     /**
-     * the origin ArtMethod if this method is a backup of someone, null when this 
-     * is not backup
+     * the origin ArtMethod if this method is a backup of someone, null when 
+     * this is not backup
      */
     private ArtMethod origin;
 
@@ -143,11 +143,12 @@ public class ArtMethod {
             } else {
                 Constructor<Method> constructor = Method.class.getDeclaredConstructor();
 
-                // we can't use constructor.setAccessible(true); because Google does 
-                // not like it. 
+                // we can't use constructor.setAccessible(true); because Google
+                // does not like it AccessibleObject.setAccessible(new
+                // AccessibleObject[]{constructor}, true);
                 Field override = AccessibleObject.class.getDeclaredField(
-                        Build.VERSION.SDK_INT == Build.VERSION_CODES.M 
-                        ? "flag" : "override");
+                        Build.VERSION.SDK_INT == Build.VERSION_CODES.M
+                         ? "flag" : "override");
 
                 override.setAccessible(true);
                 override.set(constructor, true);
@@ -277,7 +278,6 @@ public class ArtMethod {
     private Object invokeInternal(Object receiver, Object... args) throws IllegalAccessException,
                                                                           InvocationTargetException,
                                                                           InstantiationException {
-
         if (constructor != null) {
             return constructor.newInstance(args);
         } else {
@@ -388,7 +388,7 @@ public class ArtMethod {
 
     /**
      * the static method is lazy resolved, when not resolved, the entry point is 
-     * a trampoline(蹦床) of a bridge, we can not hook these entry. this method 
+     * a trampoline(蹦床) of a bridge, we can not hook these entry. this method
      * force the static method to be resolved.
      * 保证 static 方法可以被 hook 到
      */
@@ -474,9 +474,9 @@ public class ArtMethod {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
             return -1L;
         }
-
-        final Method fake = XposedHelpers.findMethodExact(
-                NeverCalled.class, "fake", int.class);
+        final Method fake = XposedHelpers.findMethodExact(NeverCalled.class, 
+                                                          "fake", 
+                                                          int.class);
 
         return ArtMethod.of(fake).getEntryPointFromQuickCompiledCode();
     }

@@ -38,6 +38,7 @@ import me.weishu.epic.art.method.ArtMethod;
 
 /**
  * Hook Center.
+ * 目前的 Android 热更新基本上是采用 "底层替换" 或者是 "类加载"，Sophix 则把这两者进行了结合.
  */
 public final class Epic {
     private static final String TAG = "Epic";
@@ -81,7 +82,10 @@ public final class Epic {
         hookMethod(artOrigin);
     }
 
-    private static void hookMethod(ArtMethod artOrigin) {
+    /**
+     * 找到需要hook的java方法对应的C/C++层Art虚拟机中额方法对象：ArtMethod.
+     */
+    private static boolean hookMethod(ArtMethod artOrigin) {
         MethodInfo methodInfo = new MethodInfo();
         methodInfo.isStatic = Modifier.isStatic(artOrigin.getModifiers());
         final Class<?>[] parameterTypes = artOrigin.getParameterTypes();
@@ -112,6 +116,7 @@ public final class Epic {
         // 在Android N及以上系统中，APK安装时默认不会进行AOT编译.
         // 对于还未编译的方法，在LinkCode函数中会将其compile_code入口点设置为
         // GetQuickToInterpreterBridge, 这也是 art_quick_interpreter_bridge.
+        // 如果要hook的目标方法还未编译，则调用 ArtMethod.compile()主动触发编译
         long originEntry = artOrigin.getEntryPointFromQuickCompiledCode();
         if (originEntry == ArtMethod.getQuickToInterpreterBridge()) {
             // compilePoint地址 与 interpretBridge 地址相同，说明还没有通过 jit 热编译.
@@ -138,8 +143,9 @@ public final class Epic {
         // 之说以
         ArtMethod backupMethod = artOrigin.backup(); // TODO: ING
 
-        Logger.i(TAG, "backup method address:" + Debug.addrHex(
-                backupMethod.getAddress()));
+        Logger.i(TAG, "backup method address:" +
+                Debug.addrHex(backupMethod.getAddress()));
+
         Logger.i(TAG, "backup method entry :" + Debug.addrHex(
                 backupMethod.getEntryPointFromQuickCompiledCode()));
 
@@ -150,12 +156,13 @@ public final class Epic {
 
         final long key = originEntry;
         final EntryLock lock = EntryLock.obtain(originEntry);
-        //noinspection SynchronizationOnLocalVariableOrMethodParameter
+        // noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (lock) {
             if (!scripts.containsKey(key)) {
                 scripts.put(key, new Trampoline(ShellCode, originEntry));
             }
             Trampoline trampoline = scripts.get(key);
+            // 安装跳板代码：完成hook
             boolean ret = trampoline.install(artOrigin);
             Logger.d(TAG, "hook Method result:" + ret);
             return;

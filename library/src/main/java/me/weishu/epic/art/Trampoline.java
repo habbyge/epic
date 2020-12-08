@@ -48,7 +48,10 @@ class Trampoline {
     Trampoline(ShellCode shellCode, long entryPoint) {
         this.shellCode = shellCode;
         this.jumpToAddress = shellCode.toMem(entryPoint);
-        this.originalCode = EpicNative.get(jumpToAddress, shellCode.sizeOfDirectJump());
+
+        this.originalCode = EpicNative.get(
+                jumpToAddress,
+                shellCode.sizeOfDirectJump());
     }
 
     public boolean install(ArtMethod originMethod) {
@@ -59,7 +62,7 @@ class Trampoline {
             return true;
         }
 
-        byte[] page = create();
+        byte[] page = create(); // 创建跳板
         EpicNative.put(page, getTrampolineAddress());
 
         int quickCompiledCodeSize = Epic.getQuickCompiledCodeSize(originMethod);
@@ -119,15 +122,14 @@ class Trampoline {
     }
 
     private byte[] create() {
-        Logger.d(TAG, "create trampoline." + segments);
+        Logger.i(TAG, "create trampoline." + segments);
         byte[] mainPage = new byte[getSize()];
 
         int offset = 0;
         for (ArtMethod method : segments) {
             byte[] bridgeJump = createTrampoline(method);
-            int length = bridgeJump.length;
-            System.arraycopy(bridgeJump, 0, mainPage, offset, length);
-            offset += length;
+            System.arraycopy(bridgeJump, 0, mainPage, offset, bridgeJump.length);
+            offset += bridgeJump.length;
         }
 
         byte[] callOriginal = shellCode.createCallOrigin(jumpToAddress, originalCode);
@@ -143,10 +145,10 @@ class Trampoline {
                 + " to origin entry: 0x" + Debug.addrHex(jumpToAddress));
 
         synchronized (Trampoline.class) {
-            return EpicNative.activateNative(jumpToAddress, pc, 
-                    shellCode.sizeOfDirectJump(),
-                    shellCode.sizeOfBridgeJump(), 
-                    shellCode.createDirectJump(pc));
+            return EpicNative.activateNative(jumpToAddress, pc,
+                                             shellCode.sizeOfDirectJump(),
+                                             shellCode.sizeOfBridgeJump(),
+                                             shellCode.createDirectJump(pc));
         }
     }
 
@@ -160,6 +162,7 @@ class Trampoline {
         final Epic.MethodInfo methodInfo = Epic.getMethodInfo(source.getAddress());
         final Class<?> returnType = methodInfo.returnType;
 
+// TODO: 2020/12/1 ing......
         Method bridgeMethod = Runtime.is64Bit() 
                 ? Entry64.getBridgeMethod(returnType)
                 : Entry.getBridgeMethod(returnType);
@@ -170,12 +173,12 @@ class Trampoline {
         long sourceAddress = source.getAddress();
         long structAddress = EpicNative.malloc(4);
 
-        Logger.d(TAG, "targetAddress:" + Debug.longHex(targetAddress));
-        Logger.d(TAG, "sourceAddress:" + Debug.longHex(sourceAddress));
-        Logger.d(TAG, "targetEntry:" + Debug.longHex(targetEntry));
-        Logger.d(TAG, "structAddress:" + Debug.longHex(structAddress));
+        Logger.i(TAG, "targetAddress:" + Debug.longHex(targetAddress));
+        Logger.i(TAG, "sourceAddress:" + Debug.longHex(sourceAddress));
+        Logger.i(TAG, "targetEntry:" + Debug.longHex(targetEntry));
+        Logger.i(TAG, "structAddress:" + Debug.longHex(structAddress));
 
-        return shellCode.createBridgeJump(targetAddress, 
-                targetEntry, sourceAddress, structAddress);
+        return shellCode.createBridgeJump(targetAddress, targetEntry,
+                                          sourceAddress, structAddress);
     }
 }

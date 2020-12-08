@@ -242,7 +242,7 @@ void init_entries(JNIEnv* env) {
         // art::JavaVMExt::AddWeakGlobalReference(art::Thread*, art::mirror::Object*)
         void* handle = dlopen("libart.so", RTLD_LAZY | RTLD_GLOBAL);
         addWeakGloablReference = (jobject (*)(JavaVM*, void*, void*)) dlsym(handle, 
-            "_ZN3art9JavaVMExt22AddWeakGlobalReferenceEPNS_6ThreadEPNS_6mirror6ObjectE");
+        "_ZN3art9JavaVMExt22AddWeakGlobalReferenceEPNS_6ThreadEPNS_6mirror6ObjectE");
     } else if (api_level < 24) {
         // Android M:
         // art::JavaVMExt::AddWeakGlobalRef(art::Thread*, art::mirror::Object*)
@@ -259,7 +259,7 @@ void init_entries(JNIEnv* env) {
 
         const char* addWeakGloablReferenceSymbol = api_level <= 25 ? 
             "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadEPNS_6mirror6ObjectE" : 
-            "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadENS_6ObjPtrINS_6mirror6ObjectEEE";
+    "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadENS_6ObjPtrINS_6mirror6ObjectEEE";
 
         addWeakGloablReference = (jobject (*)(JavaVM*, void*, void*))
                 dlsym_ex(handle, addWeakGloablReferenceSymbol);
@@ -552,6 +552,7 @@ jboolean epic_activate(JNIEnv* env, jclass jclazz,
     jboolean result = epic_munprotect(env, jclazz, jumpToAddress, sizeOfDirectJump);
     if (result) {
         unsigned char* destPnt = (unsigned char*) jumpToAddress;
+
         for (int i = 0; i < length; ++i) {
             destPnt[i] = (unsigned char) srcPnt[i];
         }

@@ -28,7 +28,7 @@ import java.nio.ByteOrder;
 import me.weishu.epic.art.EpicNative;
 
 /**
- * The Offset of field in an ArtMethod
+ * The Offset of field in an ArtMethod.
  */
 class Offset {
     private static final String TAG = "Offset";

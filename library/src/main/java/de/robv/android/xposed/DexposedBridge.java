@@ -188,8 +188,9 @@ public final class DexposedBridge {
         return unhooks;
     }
 
-    public static XC_MethodHook.Unhook findAndHookMethod(Class<?> clazz,
-            String methodName, Object... parameterTypesAndCallback) {
+    public static XC_MethodHook.Unhook findAndHookMethod(Class<?> clazz, 
+                                                String methodName, 
+                                                Object... parameterTypesAndCallback) {
                                                              
         if (parameterTypesAndCallback.length == 0 || 
                 !(parameterTypesAndCallback[parameterTypesAndCallback.length - 1] 

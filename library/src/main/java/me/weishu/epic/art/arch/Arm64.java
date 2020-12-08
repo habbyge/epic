@@ -27,7 +27,7 @@ public class Arm64 extends ShellCode {
 
     @Override
     public byte[] createDirectJump(long targetAddress) {
-        byte[] instructions = new byte[]{
+        byte[] instructions = new byte[] {
             0x50, 0x00, 0x00, 0x58,         // ldr x9, _targetAddress
             0x00, 0x02, 0x1F, (byte) 0xD6,  // br x9
             0x00, 0x00, 0x00, 0x00,         // targetAddress
