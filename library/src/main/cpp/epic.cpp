@@ -289,9 +289,7 @@ jboolean epic_compile(JNIEnv* env, jclass, jobject method, jlong self) {
 }
 
 jlong epic_suspendAll(JNIEnv*, jclass) {
-    ScopedSuspendAll* scopedSuspendAll = (ScopedSuspendAll*) 
-            malloc(sizeof(ScopedSuspendAll));
-
+    ScopedSuspendAll* scopedSuspendAll = (ScopedSuspendAll*) malloc(sizeof(ScopedSuspendAll));
     suspendAll(scopedSuspendAll, "stop_jit");
     return reinterpret_cast<jlong>(scopedSuspendAll);
 }
@@ -387,7 +385,6 @@ jbyteArray epic_memget(JNIEnv* env, jclass, jlong src, jint length) {
 }
 
 jlong epic_mmap(JNIEnv* env, jclass, jint length) {
-    
     void* space = mmap(0, (size_t) length, 
                        PROT_READ | PROT_WRITE | PROT_EXEC,
                        MAP_PRIVATE | MAP_ANONYMOUS, 

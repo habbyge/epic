@@ -132,16 +132,10 @@ public class ArtMethod {
                     field.set(destArtMethod, field.get(srcArtMethod));
                 }
 
-                Method newMethod = Method.class
-                        .getConstructor(artMethodClass)
-                        .newInstance(destArtMethod);
-
+                Method newMethod = Method.class.getConstructor(artMethodClass).newInstance(destArtMethod);
                 newMethod.setAccessible(true);
                 artMethod = ArtMethod.of(newMethod);
-
-                artMethod.setEntryPointFromQuickCompiledCode(
-                        getEntryPointFromQuickCompiledCode());
-
+                artMethod.setEntryPointFromQuickCompiledCode(getEntryPointFromQuickCompiledCode());
                 artMethod.setEntryPointFromJni(getEntryPointFromJni());
             } else {
                 Constructor<Method> constructor = Method.class.getDeclaredConstructor();
@@ -151,7 +145,7 @@ public class ArtMethod {
                 // AccessibleObject[]{constructor}, true);
                 Field override = AccessibleObject.class.getDeclaredField(
                         Build.VERSION.SDK_INT == Build.VERSION_CODES.M
-                         ? "flag" : "override");
+                        ? "flag" : "override");
 
                 override.setAccessible(true);
                 override.set(constructor, true);
@@ -178,8 +172,7 @@ public class ArtMethod {
             return artMethod;
         } catch (Throwable e) {
             Log.e(TAG, "backup method error:", e);
-            throw new IllegalStateException("Cannot create backup method from :: "
-                    + getExecutable(), e);
+            throw new IllegalStateException("Cannot create backup method from :: " + getExecutable(), e);
         }
     }
 
@@ -264,17 +257,16 @@ public class ArtMethod {
                 byte[] backupAddress = EpicNative.get(address, 4);
                 if (!Arrays.equals(currentAddress, backupAddress)) {
                     if (Debug.DEBUG) {
-                    Logger.i(TAG, "the address of java method was moved by gc, "
-                            + "backup it now! origin address: 0x"
-                            + Arrays.toString(currentAddress) 
-                            + " , currentAddress: 0x" 
-                            + Arrays.toString(backupAddress));
+                        Logger.i(TAG, "the address of java method was moved by gc, "
+                                + "backup it now! origin address: 0x"
+                                + Arrays.toString(currentAddress)
+                                + " , currentAddress: 0x"
+                                + Arrays.toString(backupAddress));
                     }
                     EpicNative.put(currentAddress, address);
                     return invokeInternal(receiver, args);
                 } else {
-                    Logger.i(TAG, "the address is same with last invoke, "
-                                    + "not moved by gc");
+                    Logger.i(TAG, "the address is same with last invoke, not moved by gc");
                 }
             }
         }
@@ -282,10 +274,9 @@ public class ArtMethod {
         return invokeInternal(receiver, args);
     }
 
-    private Object invokeInternal(Object receiver, Object... args) throws 
-            IllegalAccessException,
-            InvocationTargetException, 
-            InstantiationException {
+    private Object invokeInternal(Object receiver, Object... args) throws IllegalAccessException,
+                                                                          InvocationTargetException,
+                                                                          InstantiationException {
 
         if (constructor != null) {
             return constructor.newInstance(args);
@@ -485,10 +476,7 @@ public class ArtMethod {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
             return -1L;
         }
-        final Method fake = XposedHelpers.findMethodExact(NeverCalled.class, 
-                                                          "fake", 
-                                                          int.class);
-
+        final Method fake = XposedHelpers.findMethodExact(NeverCalled.class, "fake", int.class);
         return ArtMethod.of(fake).getEntryPointFromQuickCompiledCode();
     }
 
