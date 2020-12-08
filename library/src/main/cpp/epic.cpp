@@ -147,20 +147,41 @@
 #include "fake_dlfcn.h"
 #include "art.h"
 
-#undef NDEBUG
+//#undef NDEBUG
+#define NDEBUG
 #ifdef NDEBUG
-#define LOGV(...)  ((void)__android_log_print(ANDROID_LOG_INFO, \
-                            "epic.Native", __VA_ARGS__))
+    #define LOGV(...)  ((void)__android_log_print(ANDROID_LOG_INFO, "epic.Native", __VA_ARGS__))
 #else
-#define LOGV(...)
+    #define LOGV(...)
 #endif
 
 #define JNIHOOK_CLASS "me/weishu/epic/art/EpicNative"
 
 jobject (*addWeakGloablReference)(JavaVM*, void*, void*) = nullptr;
 
+/**
+ * Just-in-time compilation是一种动态编译，是在程序运行过程中才执行编译工作。相对于ART的核心技术
+ * ahead-of-time，JIT有几个优点：比AOT更节省存储空间；不需要在每次安装，或者系统升级、应用升级后都
+ * 做AOT优化。
+ * 因为不需要在程序安装时执行AOT预编译，所以不会出现漫长的安装等待，不会影响程序的启动速度。
+ * JIT的编译过程是在独立的线程中完成的，并且只编译有必要的函数。
+ * AOT的编译有两个主要的执行时机：一是ROM系统编译时，一是第三方应用程序安装时。
+ * 1. JIT的执行时机需要一套追踪机制来决定哪一部分代码需要被执行JIT－也就是热区域的确定，这个追踪技术在
+ *    Android中被成为 Profile Guided Compilation，其工作原理：
+ * step1, 应用程序第一次启动时，只会通过解释器执行，同时JIT会介入并针对hot methods执行优化工作。
+ * step2, 第一步的执行过程中会同步输出一种被称为profile information的信息保存到文件中。
+ * step3, 上述步骤会重复执行，以使profile information不断完善，profile information中记录了需要
+ *        离线优化的函数hot methods，影响程序启动速度的Classes，以进一步优化程序的启动速度，等等。
+ * step4, 当设备处于idle状态并且在充电，就会进入profile guided compilation服务，这个编译过程以
+ *        profile information文件为输入，输出是二进制机器码，这里的二级制机器码被用于替代原始应用程
+ *        序的相应部分。
+ * step5, 经过前面的步骤，应用程序在后续启动时，就可以根据实际情况在AOT/JIT/Interpreter中选择最合适
+ *        的执行方式了。
+ */
 void* (*jit_load_)(bool*) = nullptr;
 void* jit_compiler_handle_= nullptr;
+ // 在 art/rumtime/jit/jit_compiler.cc 中，作用是 实时翻译运行过程中的热点函数，
+ // 保存到 jitCodeCache 中
 bool (*jit_compile_method_)(void*, void*, void*, bool) = nullptr;
 
 typedef bool (*JIT_COMPILE_METHOD1)(void*, void*, void*, bool);
@@ -229,7 +250,8 @@ void init_entries(JNIEnv* env) {
         addWeakGloablReference = (jobject (*)(JavaVM*, void*, void*)) dlsym(handle, 
                 "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadEPNS_6mirror6ObjectE");
     } else {
-        // Android N and O, Google disallow us use dlsym(google不允许使用dlsym()函数了)
+        // 从 Android N 开始(api >= 24, 7.0), Google disallow us use dlsym(google不允许使用dlsym()函数了)
+        // 使用解析so库(elf文件格式)的方式来解决：/proc/pid/maps得到该so库加载到进程地址空间中的基地址
         void* handle = dlopen_ex("libart.so", RTLD_NOW); 
         void* jit_lib = dlopen_ex("libart-compiler.so", RTLD_NOW);
         
@@ -248,27 +270,29 @@ void init_entries(JNIEnv* env) {
         jit_load_ = reinterpret_cast<void* (*)(bool*)>(dlsym_ex(jit_lib, "jit_load"));
         bool generate_debug_info = false;
         jit_compiler_handle_ = (jit_load_)(&generate_debug_info);
+
         LOGV("jit compile_method: %p", jit_compile_method_);
 
-        suspendAll = reinterpret_cast<void(*)(ScopedSuspendAll*, char*)>(dlsym_ex(
-                handle, "_ZN3art16ScopedSuspendAllC1EPKcb"));
+        suspendAll = reinterpret_cast<void(*)(ScopedSuspendAll*, char*)>(
+                dlsym_ex(handle, "_ZN3art16ScopedSuspendAllC1EPKcb"));
 
-        resumeAll = reinterpret_cast<void (*)(ScopedSuspendAll*)>(dlsym_ex(
-                handle, "_ZN3art16ScopedSuspendAllD1Ev"));
+        resumeAll = reinterpret_cast<void (*)(ScopedSuspendAll*)>(
+                dlsym_ex(handle, "_ZN3art16ScopedSuspendAllD1Ev"));
     }
 
     LOGV("addWeakGloablReference: %p", addWeakGloablReference);
 }
 
 /**
- * 这里的思路，>=7.0 用 jit_compiler 手动编译目标ArtMethod，这样入口就确定了,
- * 直接inline hook这个quick_code入口就可以实现稳定hook，到了8.0以上入口替换就稳多了.
+ * 这里的思路，>=7.0 用 jit_compiler 手动编译目标 ArtMethod，这样入口就确定了,直接 inline hook
+ * 这个quick_code入口就可以实现稳定hook，到了8.0以上入口替换就稳多了.
  * @param self art::Thread对象的 Native 地址
  */
 jboolean epic_compile(JNIEnv* env, jclass, jobject method, jlong self) {
     LOGV(("self from native peer: %p, from register: %p",
             reinterpret_cast<void*>(self), __self());
 
+    // Method在 Art虚拟机中的对象 ArtMethod 的基地址
     jlong art_method = (jlong) env->FromReflectedMethod(method);
 
     // ArtMethod.compile是通过调用JIT的 jit_compile_method 来完成方法编译的，

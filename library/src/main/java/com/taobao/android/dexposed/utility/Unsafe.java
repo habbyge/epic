@@ -24,7 +24,7 @@ public final class Unsafe {
     private static final String TAG = "Unsafe";
 
     private static Object unsafe;
-    private static Class unsafeClass;
+    private static Class<?> unsafeClass;
 
     static {
         try {
@@ -47,7 +47,7 @@ public final class Unsafe {
     }
 
     @SuppressWarnings("unchecked")
-    public static int arrayBaseOffset(Class cls) {
+    public static int arrayBaseOffset(Class<?> cls) {
         try {
             return (int) unsafeClass
                     .getDeclaredMethod("arrayBaseOffset", Class.class)
@@ -59,7 +59,7 @@ public final class Unsafe {
     }
 
     @SuppressWarnings("unchecked")
-    public static int arrayIndexScale(Class cls) {
+    public static int arrayIndexScale(Class<?> cls) {
         try {
             return (int) unsafeClass
                     .getDeclaredMethod("arrayIndexScale", Class.class)
