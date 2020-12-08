@@ -118,16 +118,14 @@ public final class EpicNative {
 
     public static boolean compileMethod(Member method) {
         // Native Thread(art::Thread) 对象地址保存到 Java Thread 对象的 nativePeer 字段
-        final long nativePeer = XposedHelpers.getLongField(
-                    Thread.currentThread(), "nativePeer");
-
+        // 即：当前线程对象的基地址
+        final long nativePeer = XposedHelpers.getLongField(Thread.currentThread(), "nativePeer");
         return compileMethod(method, nativePeer);
     }
 
     public static Object getObject(long address) {
-        final long nativePeer = XposedHelpers.getLongField(
-            Thread.currentThread(), "nativePeer");
-            
+        final long nativePeer = XposedHelpers.getLongField(Thread.currentThread(),
+                                                           "nativePeer");
         return getObject(nativePeer, address);
     }
 

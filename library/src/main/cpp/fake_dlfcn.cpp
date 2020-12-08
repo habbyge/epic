@@ -42,6 +42,8 @@
 
 #define TAG_NAME    "dlfcn_ex"
 
+#define LOG_DBG
+
 #ifdef LOG_DBG
     #define log_info(fmt, args...) __android_log_print(ANDROID_LOG_INFO, \
                                                        TAG_NAME,         \

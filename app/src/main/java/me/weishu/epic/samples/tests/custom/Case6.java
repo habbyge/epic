@@ -26,13 +26,13 @@ public class Case6 implements Case {
 
         long testAddr = Unsafe.getObjectAddress(test);
         Log.i(TAG, "test object address :" + testAddr);
+
         Log.i(TAG, "test object :" + EpicNative.getObject(
-                XposedHelpers.getLongField(Thread.currentThread(), "nativePeer"), 
+                XposedHelpers.getLongField(Thread.currentThread(), "nativePeer"),
                 testAddr));
 
         // Log.i(TAG, "object:" + EpicNative.getObject())
-        final Method nanoTime = XposedHelpers.findMethodExact(
-                System.class, "nanoTime");
+        final Method nanoTime = XposedHelpers.findMethodExact(System.class, "nanoTime");
 
         final Method uptimeMillis = XposedHelpers.findMethodExact(
                 SystemClock.class, "uptimeMillis");

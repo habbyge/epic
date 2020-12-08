@@ -47,12 +47,13 @@ public class ArtMethod {
      * stand for the Java method. generally, it was the address of 
      * art::mirror::ArtMethod. @{link #objectAddress}
      */
-    private long address;
+    // artOrigin. objectAddress 保存的是原始的Java Method对象（Java Object）在内存中的地址.
+    private long address; // method对应的Art虚拟机中的地址
 
     /**
      * the origin object if this is a constructor
      */
-    private Constructor constructor;
+    private Constructor<?> constructor;
 
     /**
      * the origin object if this is a method;
@@ -71,7 +72,7 @@ public class ArtMethod {
      */
     private static int artMethodSize = -1;
 
-    private ArtMethod(Constructor constructor) {
+    private ArtMethod(Constructor<?> constructor) {
         if (constructor == null) {
             throw new IllegalArgumentException("constructor can not be null");
         }
@@ -99,10 +100,9 @@ public class ArtMethod {
         return new ArtMethod(method);
     }
 
-    public static ArtMethod of(Constructor constructor) {
+    public static ArtMethod of(Constructor<?> constructor) {
         return new ArtMethod(constructor);
     }
-
 
     public ArtMethod backup() {
         try {
@@ -132,14 +132,12 @@ public class ArtMethod {
                     }
                     field.set(destArtMethod, field.get(srcArtMethod));
                 }
-                Method newMethod = Method.class.getConstructor(artMethodClass)
-                        .newInstance(destArtMethod);
+                Method newMethod = Method.class.getConstructor(artMethodClass).newInstance(destArtMethod);
 
                 newMethod.setAccessible(true);
                 artMethod = ArtMethod.of(newMethod);
 
-                artMethod.setEntryPointFromQuickCompiledCode(
-                        getEntryPointFromQuickCompiledCode());
+                artMethod.setEntryPointFromQuickCompiledCode(getEntryPointFromQuickCompiledCode());
 
                 artMethod.setEntryPointFromJni(getEntryPointFromJni());
             } else {
@@ -176,8 +174,7 @@ public class ArtMethod {
             return artMethod;
         } catch (Throwable e) {
             Log.e(TAG, "backup method error:", e);
-            throw new IllegalStateException("Cannot create backup method from :: " 
-                    + getExecutable(), e);
+            throw new IllegalStateException("Cannot create backup method from :: " + getExecutable(), e);
         }
     }
 
@@ -248,12 +245,11 @@ public class ArtMethod {
      * @return origin method's return value.
      * @throws IllegalAccessException    throw if no access, impossible.
      * @throws InvocationTargetException invoke target error.
-     * @throws InstantiationException    throw when the constructor can not create instance.
+     * @throws InstantiationExceptionthrow when the c onstructor can not create instance.
      */
-    public Object invoke(Object receiver, Object... args) 
-                throws IllegalAccessException, 
-                InvocationTargetException, 
-                InstantiationException {
+    public Object invoke(Object receiver, Object... args) throws IllegalAccessException,
+                                                                 InvocationTargetException,
+                                                                 InstantiationException {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             if (origin != null) {
@@ -261,17 +257,16 @@ public class ArtMethod {
                 byte[] backupAddress = EpicNative.get(address, 4);
                 if (!Arrays.equals(currentAddress, backupAddress)) {
                     if (Debug.DEBUG) {
-                    Logger.i(TAG, "the address of java method was moved by gc, "
-                            + "backup it now! origin address: 0x"
-                            + Arrays.toString(currentAddress) 
-                            + " , currentAddress: 0x" 
-                            + Arrays.toString(backupAddress));
+                        Logger.i(TAG, "the address of java method was moved by gc, "
+                                + "backup it now! origin address: 0x"
+                                + Arrays.toString(currentAddress)
+                                + " , currentAddress: 0x"
+                                + Arrays.toString(backupAddress));
                     }
                     EpicNative.put(currentAddress, address);
                     return invokeInternal(receiver, args);
                 } else {
-                    Logger.i(TAG, "the address is same with last invoke, "
-                                    + "not moved by gc");
+                    Logger.i(TAG, "the address is same with last invoke, not moved by gc");
                 }
             }
         }
@@ -279,10 +274,9 @@ public class ArtMethod {
         return invokeInternal(receiver, args);
     }
 
-    private Object invokeInternal(Object receiver, Object... args) 
-            throws IllegalAccessException, 
-            InvocationTargetException, 
-            InstantiationException {
+    private Object invokeInternal(Object receiver, Object... args) throws IllegalAccessException,
+                                                                          InvocationTargetException,
+                                                                          InstantiationException {
 
         if (constructor != null) {
             return constructor.newInstance(args);
@@ -396,6 +390,7 @@ public class ArtMethod {
      * the static method is lazy resolved, when not resolved, the entry point is 
      * a trampoline(蹦床) of a bridge, we can not hook these entry. this method 
      * force the static method to be resolved.
+     * 保证 static 方法可以被 hook 到
      */
     public void ensureResolved() {
         if (!Modifier.isStatic(getModifiers())) {
@@ -423,11 +418,8 @@ public class ArtMethod {
     /**
      * @param pointer_entry_point_from_quick_compiled_code the entry point.
      */
-    public void setEntryPointFromQuickCompiledCode(
-            long pointer_entry_point_from_quick_compiled_code) {
-
-        Offset.write(address, Offset.ART_QUICK_CODE_OFFSET, 
-                     pointer_entry_point_from_quick_compiled_code);
+    public void setEntryPointFromQuickCompiledCode(long pointer_entry_point_from_quick_compiled_code) {
+        Offset.write(address, Offset.ART_QUICK_CODE_OFFSET, pointer_entry_point_from_quick_compiled_code);
     }
 
     /**
