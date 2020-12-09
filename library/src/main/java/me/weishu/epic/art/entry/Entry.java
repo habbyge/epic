@@ -133,11 +133,18 @@ public class Entry {
 
         Logger.i(TAG, "struct:" + Long.toHexString(struct));
 
-        final int sp = ByteBuffer.wrap(EpicNative.get(struct, 4)).order(ByteOrder.LITTLE_ENDIAN).getInt();
+        final int sp = ByteBuffer.wrap(EpicNative
+                .get(struct, 4))
+                .order(ByteOrder.LITTLE_ENDIAN)
+                .getInt();
 
         // Logger.i(TAG, "stack:" + Debug.hexdump(EpicNative.get(sp, 96), 0));
 
-        final byte[] rr1 = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(r1).array();
+        final byte[] rr1 = ByteBuffer.allocate(4)
+                .order(ByteOrder.LITTLE_ENDIAN)
+                .putInt(r1)
+                .array();
+
         final byte[] r2 = EpicNative.get(struct + 4, 4);
 
         final byte[] r3 = EpicNative.get(struct + 8, 4);
@@ -146,13 +153,19 @@ public class Entry {
         Logger.d(TAG, "r2:" + Debug.hexdump(r2, 0));
         Logger.d(TAG, "r3:" + Debug.hexdump(r3, 0));
 
-        final int sourceMethod = ByteBuffer.wrap(EpicNative.get(struct + 12, 4)).order(ByteOrder.LITTLE_ENDIAN).getInt();
+        final int sourceMethod = ByteBuffer
+                .wrap(EpicNative.get(struct + 12, 4))
+                .order(ByteOrder.LITTLE_ENDIAN)
+                .getInt();
+
         Logger.i(TAG, "sourceMethod:" + Integer.toHexString(sourceMethod));
 
         Epic.MethodInfo originMethodInfo = Epic.getMethodInfo(sourceMethod);
         Logger.i(TAG, "originMethodInfo :" + originMethodInfo);
 
-        final Pair<Object, Object[]> constructArguments = constructArguments(originMethodInfo, self, rr1, r2, r3, sp);
+        final Pair<Object, Object[]> constructArguments = constructArguments(
+                originMethodInfo, self, rr1, r2, r3, sp);
+
         Object receiver = constructArguments.first;
         Object[] arguments = constructArguments.second;
 
@@ -227,13 +240,17 @@ public class Entry {
             numberOfArgs = 1 + originMethodInfo.paramNumber;
             typeOfArgs = new Class<?>[numberOfArgs];
             typeOfArgs[0] = Object.class; // this
-            System.arraycopy(originMethodInfo.paramTypes, 0, typeOfArgs, 1, originMethodInfo.paramTypes.length);
+
+            System.arraycopy(originMethodInfo.paramTypes, 0, typeOfArgs,
+                    1, originMethodInfo.paramTypes.length);
         }
 
         Object[] arguments = new Object[numberOfArgs];
 
-        int currentStackPosition = 4; // sp + 0 = ArtMethod, sp + 4... start store arguments.
-        final int argumentStackBegin = 16; // sp + 4 = r1, sp + 8 = r2, sp + 12 = r3, sp + 16 start in stack.
+        // sp + 0 = ArtMethod, sp + 4... start store arguments.
+        int currentStackPosition = 4;
+        // sp + 4 = r1, sp + 8 = r2, sp + 12 = r3, sp + 16 start in stack.
+        final int argumentStackBegin = 16;
 
         int[] argStartPos = new int[numberOfArgs];
 
@@ -250,7 +267,10 @@ public class Entry {
         do {
             if (argTotalLength <= 4) break;
 
-            boolean align = Build.VERSION.SDK_INT >= 23 && numberOfArgs > 0 && getTypeLength(typeOfArgs[0]) == 8;
+            boolean align = Build.VERSION.SDK_INT >= 23
+                    && numberOfArgs > 0
+                    && getTypeLength(typeOfArgs[0]) == 8;
+
             if (align) {
                 System.arraycopy(r2, 0, argBytes, 4, 4);
                 System.arraycopy(r3, 0, argBytes, 8, 4);
@@ -293,9 +313,15 @@ public class Entry {
                             isR3Grabbed = false;
                         }
 
-                        if (numberOfArgs == 2 && arg1TypeLength == 8 && arg2TypeLength == 8) {
-                            // in this case, we have no reference register to local r3, just hard code now :(
-                            System.arraycopy(EpicNative.get(sp + 44, 4), 0, argBytes, 12, 4);
+                        if (numberOfArgs == 2
+                                && arg1TypeLength == 8
+                                && arg2TypeLength == 8) {
+
+                            // in this case, we have no reference register
+                            // to local r3, just hard code now :(
+                            System.arraycopy(EpicNative.get(sp + 44, 4),
+                                    0, argBytes, 12, 4);
+
                             isR3Grabbed = false;
                         }
                     }
@@ -303,32 +329,47 @@ public class Entry {
                         int arg1TypeLength = getTypeLength(typeOfArgs[0]);
                         int arg2TypeLength = getTypeLength(typeOfArgs[1]);
                         int arg3TypeLength = getTypeLength(typeOfArgs[2]);
-                        if (arg1TypeLength == 4 && arg2TypeLength == 4 && arg3TypeLength == 4) {
+                        if (arg1TypeLength == 4
+                                && arg2TypeLength == 4
+                                && arg3TypeLength == 4) {
+
                             // in this case: r1 = arg1; r2 = arg2; r3 = arg3, normal.
                             isR3Grabbed = false;
                         }
-                        if (numberOfArgs == 3 && arg1TypeLength == 8 && arg2TypeLength == 4 && arg3TypeLength == 8) {
+                        if (numberOfArgs == 3
+                                && arg1TypeLength == 8
+                                && arg2TypeLength == 4
+                                && arg3TypeLength == 8) {
+
                             // strange case :)
-                            System.arraycopy(EpicNative.get(sp + 52, 4), 0, argBytes, 12, 4);
+                            System.arraycopy(EpicNative.get(sp + 52, 4),
+                                    0, argBytes, 12, 4);
+
                             isR3Grabbed = false;
                         }
                     }
                     if (isR3Grabbed) {
-                        byte[] otherStoreInStack = Arrays.copyOfRange(argBytes, argumentStackBegin, argBytes.length);
+                        byte[] otherStoreInStack = Arrays.copyOfRange(
+                                argBytes, argumentStackBegin, argBytes.length);
+
                         int otherStoreInStackLength = otherStoreInStack.length;
                         int searchRegion = 0;
                         for (int i = argumentStackBegin + otherStoreInStackLength; ; i = i + 4) {
-                            final byte[] bytes = EpicNative.get(sp + i, otherStoreInStackLength);
+                            final byte[] bytes = EpicNative.get(
+                                    sp + i, otherStoreInStackLength);
+
                             searchRegion += otherStoreInStackLength;
                             if (Arrays.equals(bytes, otherStoreInStack)) {
                                 int originR3Index = sp + i - 4;
                                 final byte[] originR3 = EpicNative.get(originR3Index, 4);
-                                Logger.d(TAG, "found other arguments in stack, index:" + i + ", origin r3:" + Arrays.toString(originR3));
+                                Logger.d(TAG, "found other arguments in stack, index:"
+                                        + i + ", origin r3:" + Arrays.toString(originR3));
                                 System.arraycopy(originR3, 0, argBytes, 12, 4);
                                 break;
                             }
                             if (searchRegion > (1 << 10)) {
-                                throw new RuntimeException("can not found the modify r3 register!!!");
+                                throw new RuntimeException(
+                                        "can not found the modify r3 register!!!");
                             }
                         }
                     }
@@ -343,10 +384,11 @@ public class Entry {
             final Class<?> typeOfArg = typeOfArgs[i];
             final int startPos = argStartPos[i];
             final int typeLength = getTypeLength(typeOfArg);
-            byte[] argWithBytes = Arrays.copyOfRange(argBytes, startPos, startPos + typeLength);
+
+            byte[] argWithBytes = Arrays.copyOfRange(argBytes,
+                    startPos, startPos + typeLength);
+
             arguments[i] = wrapArgument(typeOfArg, self, argWithBytes);
-//            Logger.d(TAG, "argument[" + i + "], startPos:" + startPos + ", typeOfLength:" + typeLength);
-//            Logger.d(TAG, "argWithBytes:" + Debug.hexdump(argWithBytes, 0) + ", value:" + arguments[i]);
         }
 
         Object thiz = null;
@@ -365,7 +407,10 @@ public class Entry {
     }
 
     private static Object wrapArgument(Class<?> type, int self, byte[] value) {
-        final ByteBuffer byteBuffer = ByteBuffer.wrap(value).order(ByteOrder.LITTLE_ENDIAN);
+        final ByteBuffer byteBuffer = ByteBuffer
+                .wrap(value)
+                .order(ByteOrder.LITTLE_ENDIAN);
+
         Logger.d(TAG, "wrapArgument: type:" + type);
         if (type.isPrimitive()) {
             if (type == int.class) {
@@ -390,7 +435,6 @@ public class Entry {
         } else {
             int address = byteBuffer.getInt();
             Object object = EpicNative.getObject(self, address);
-            // Logger.i(TAG, "wrapArgument, address: 0x" + Long.toHexString(address) + ", value:" + object);
             return object;
         }
     }
@@ -398,8 +442,16 @@ public class Entry {
     private static Map<Class<?>, String> bridgeMethodMap = new HashMap<>();
 
     static {
-        Class<?>[] primitiveTypes = new Class[]{boolean.class, byte.class, char.class, short.class,
-                int.class, long.class, float.class, double.class};
+        Class<?>[] primitiveTypes = new Class[] {
+            boolean.class,
+            byte.class,
+            char.class,
+            short.class,
+            int.class,
+            long.class,
+            float.class,
+            double.class
+        };
         for (Class<?> primitiveType : primitiveTypes) {
             bridgeMethodMap.put(primitiveType, primitiveType.getName() + "Bridge");
         }
@@ -409,9 +461,13 @@ public class Entry {
 
     public static Method getBridgeMethod(Class<?> returnType) {
         try {
-            final String bridgeMethod = bridgeMethodMap.get(returnType.isPrimitive() ? returnType : Object.class);
+            final String bridgeMethod = bridgeMethodMap.get(
+                    returnType.isPrimitive() ? returnType : Object.class);
+
             Logger.i(TAG, "bridge method:" + bridgeMethod + ", map:" + bridgeMethodMap);
-            Method method = Entry.class.getDeclaredMethod(bridgeMethod, int.class, int.class, int.class);
+            Method method = Entry.class.getDeclaredMethod(
+                    bridgeMethod, int.class, int.class, int.class);
+
             method.setAccessible(true);
             return method;
         } catch (Throwable e) {

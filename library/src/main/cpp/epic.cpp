@@ -313,9 +313,7 @@ jboolean epic_compile(JNIEnv* env, jclass, jobject method, jlong self) {
 }
 
 jlong epic_suspendAll(JNIEnv*, jclass) {
-    ScopedSuspendAll* scopedSuspendAll = (ScopedSuspendAll*)
-            malloc(sizeof(ScopedSuspendAll));
-
+    ScopedSuspendAll* scopedSuspendAll = (ScopedSuspendAll*) malloc(sizeof(ScopedSuspendAll));
     suspendAll(scopedSuspendAll, "stop_jit");
     return reinterpret_cast<jlong>(scopedSuspendAll);
 }

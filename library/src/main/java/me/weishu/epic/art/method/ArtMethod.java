@@ -132,13 +132,11 @@ public class ArtMethod {
                     }
                     field.set(destArtMethod, field.get(srcArtMethod));
                 }
-                Method newMethod = Method.class.getConstructor(artMethodClass).newInstance(destArtMethod);
 
+                Method newMethod = Method.class.getConstructor(artMethodClass).newInstance(destArtMethod);
                 newMethod.setAccessible(true);
                 artMethod = ArtMethod.of(newMethod);
-
                 artMethod.setEntryPointFromQuickCompiledCode(getEntryPointFromQuickCompiledCode());
-
                 artMethod.setEntryPointFromJni(getEntryPointFromJni());
             } else {
                 Constructor<Method> constructor = Method.class.getDeclaredConstructor();
@@ -148,7 +146,7 @@ public class ArtMethod {
                 // AccessibleObject[]{constructor}, true);
                 Field override = AccessibleObject.class.getDeclaredField(
                         Build.VERSION.SDK_INT == Build.VERSION_CODES.M
-                         ? "flag" : "override");
+                        ? "flag" : "override");
 
                 override.setAccessible(true);
                 override.set(constructor, true);
@@ -474,10 +472,7 @@ public class ArtMethod {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
             return -1L;
         }
-        final Method fake = XposedHelpers.findMethodExact(NeverCalled.class, 
-                                                          "fake", 
-                                                          int.class);
-
+        final Method fake = XposedHelpers.findMethodExact(NeverCalled.class, "fake", int.class);
         return ArtMethod.of(fake).getEntryPointFromQuickCompiledCode();
     }
 
