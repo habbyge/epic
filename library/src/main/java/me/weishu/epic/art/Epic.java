@@ -85,7 +85,7 @@ public final class Epic {
     /**
      * 找到需要hook的java方法对应的C/C++层Art虚拟机中额方法对象：ArtMethod.
      */
-    private static boolean hookMethod(ArtMethod artOrigin) {
+    private static void hookMethod(ArtMethod artOrigin) {
         MethodInfo methodInfo = new MethodInfo();
         methodInfo.isStatic = Modifier.isStatic(artOrigin.getModifiers());
         final Class<?>[] parameterTypes = artOrigin.getParameterTypes();
@@ -129,8 +129,7 @@ public final class Epic {
             boolean ret = artOrigin.compile();
             if (ret) {
                 originEntry = artOrigin.getEntryPointFromQuickCompiledCode();
-                Logger.i(TAG, "compile method success, new entry: 0x" 
-                        + Long.toHexString(originEntry));
+                Logger.i(TAG, "compile method success, new entry: 0x" + Long.toHexString(originEntry));
             } else {
                 Logger.e(TAG, "compile method failed...");
                 return;
@@ -143,8 +142,7 @@ public final class Epic {
         // 之说以
         ArtMethod backupMethod = artOrigin.backup(); // TODO: ING
 
-        Logger.i(TAG, "backup method address:" +
-                Debug.addrHex(backupMethod.getAddress()));
+        Logger.i(TAG, "backup method address:" + Debug.addrHex(backupMethod.getAddress()));
 
         Logger.i(TAG, "backup method entry :" + Debug.addrHex(
                 backupMethod.getEntryPointFromQuickCompiledCode()));
