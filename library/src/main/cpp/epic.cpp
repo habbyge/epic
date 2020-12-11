@@ -299,15 +299,15 @@ jboolean epic_compile(JNIEnv* env, jclass, jobject method, jlong self) {
     bool ret;
     if (api_level >= 29) {
         ret = ((JIT_COMPILE_METHOD2) jit_compile_method_)(jit_compiler_handle_,
-                                                reinterpret_cast<void*>(art_method),
-                                                reinterpret_cast<void*>(self), 
-                                                false, 
-                                                false);
+                                                          reinterpret_cast<void*>(art_method),
+                                                          reinterpret_cast<void*>(self),
+                                                          false,
+                                                          false);
     } else {
         ret = ((JIT_COMPILE_METHOD1) jit_compile_method_)(jit_compiler_handle_,
-                                                reinterpret_cast<void*>(art_method),
-                                                reinterpret_cast<void*>(self), 
-                                                false);
+                                                          reinterpret_cast<void*>(art_method),
+                                                          reinterpret_cast<void*>(self),
+                                                          false);
     }
     return (jboolean) ret;
 }
