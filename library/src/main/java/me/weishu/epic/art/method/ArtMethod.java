@@ -151,11 +151,11 @@ public class ArtMethod {
                 override.setAccessible(true);
                 override.set(constructor, true);
 
-                Method m = constructor.newInstance();
-                m.setAccessible(true);
+                Method constructorMethod = constructor.newInstance();
+                constructorMethod.setAccessible(true);
                 for (Field field : abstractMethodClass.getDeclaredFields()) {
                     field.setAccessible(true);
-                    field.set(m, field.get(executable));
+                    field.set(constructorMethod, field.get(executable));
                 }
                 Field artMethodField = abstractMethodClass.getDeclaredField("artMethod");
                 artMethodField.setAccessible(true);
@@ -164,8 +164,8 @@ public class ArtMethod {
 
                 byte[] data = EpicNative.get(address, artMethodSize);
                 EpicNative.put(data, memoryAddress);
-                artMethodField.set(m, memoryAddress);
-                artMethod = ArtMethod.of(m);
+                artMethodField.set(constructorMethod, memoryAddress);
+                artMethod = ArtMethod.of(constructorMethod);
             }
             artMethod.makePrivate();
             artMethod.setAccessible(true);
@@ -244,7 +244,7 @@ public class ArtMethod {
      * @return origin method's return value.
      * @throws IllegalAccessException    throw if no access, impossible.
      * @throws InvocationTargetException invoke target error.
-     * @throws InstantiationExceptionthrow when the c onstructor can not create instance.
+     * @throws InstantiationException when the c onstructor can not create instance.
      */
     public Object invoke(Object receiver, Object... args) throws IllegalAccessException,
                                                                  InvocationTargetException,

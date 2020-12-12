@@ -43,7 +43,7 @@ class Trampoline {
     private boolean active;
 
     // private ArtMethod artOrigin;
-    private Set<ArtMethod> segments = new HashSet<>();
+    private final Set<ArtMethod> segments = new HashSet<>();
 
     Trampoline(ShellCode shellCode, long entryPoint) {
         this.shellCode = shellCode;
