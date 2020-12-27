@@ -182,11 +182,11 @@ void* (*jit_load_)(bool*) = nullptr;
 void* jit_compiler_handle_= nullptr;
  // 在 art/rumtime/jit/jit_compiler.cc 中，作用是 实时翻译运行过程中的热点函数，
  // 保存到 jitCodeCache 中
-bool (*jit_compile_method_)(void*, void*, void*, bool) = nullptr;
+bool (*jit_compile_method_) (void*, void*, void*, bool) = nullptr;
 
-typedef bool (*JIT_COMPILE_METHOD1)(void*, void*, void*, bool);
+typedef bool (*JIT_COMPILE_METHOD1) (void*, void*, void*, bool);
 // Android Q
-typedef bool (*JIT_COMPILE_METHOD2)(void*, void*, void*, bool, bool); 
+typedef bool (*JIT_COMPILE_METHOD2) (void*, void*, void*, bool, bool); 
 
 void (*jit_unload_)(void*) = nullptr;
 
@@ -264,7 +264,7 @@ void init_entries(JNIEnv* env) {
         addWeakGloablReference = (jobject (*)(JavaVM*, void*, void*))
                 dlsym_ex(handle, addWeakGloablReferenceSymbol);
 
-        jit_compile_method_ = (bool (*)(void*, void*, void*, bool))
+        jit_compile_method_ = (bool (*)(void*, void*, void*, bool)) 
                 dlsym_ex(jit_lib, "jit_compile_method");
 
         jit_load_ = reinterpret_cast<void* (*)(bool*)>(dlsym_ex(jit_lib, "jit_load"));
