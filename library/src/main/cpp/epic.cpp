@@ -241,8 +241,8 @@ void init_entries(JNIEnv* env) {
         // Android L:
         // art::JavaVMExt::AddWeakGlobalReference(art::Thread*, art::mirror::Object*)
         void* handle = dlopen("libart.so", RTLD_LAZY | RTLD_GLOBAL);
-        addWeakGloablReference = (jobject (*)(JavaVM*, void*, void*)) dlsym(handle, 
-        "_ZN3art9JavaVMExt22AddWeakGlobalReferenceEPNS_6ThreadEPNS_6mirror6ObjectE");
+        addWeakGloablReference = (jobject (*)(JavaVM*, void*, void*)) dlsym(handle,
+                "_ZN3art9JavaVMExt22AddWeakGlobalReferenceEPNS_6ThreadEPNS_6mirror6ObjectE");
     } else if (api_level < 24) {
         // Android M:
         // art::JavaVMExt::AddWeakGlobalRef(art::Thread*, art::mirror::Object*)
@@ -257,9 +257,9 @@ void init_entries(JNIEnv* env) {
         
         LOGV("fake dlopen install: %p", handle);
 
-        const char* addWeakGloablReferenceSymbol = api_level <= 25 ? 
-            "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadEPNS_6mirror6ObjectE" : 
-    "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadENS_6ObjPtrINS_6mirror6ObjectEEE";
+        const char* addWeakGloablReferenceSymbol = api_level <= 25 ?
+            "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadEPNS_6mirror6ObjectE" :
+            "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadENS_6ObjPtrINS_6mirror6ObjectEEE";
 
         addWeakGloablReference = (jobject (*)(JavaVM*, void*, void*))
                 dlsym_ex(handle, addWeakGloablReferenceSymbol);
@@ -289,8 +289,7 @@ void init_entries(JNIEnv* env) {
  * @param self art::Thread对象的 Native 地址
  */
 jboolean epic_compile(JNIEnv* env, jclass, jobject method, jlong self) {
-    LOGV(("self from native peer: %p, from register: %p",
-            reinterpret_cast<void*>(self), __self());
+    LOGV(("self from native peer: %p, from register: %p", reinterpret_cast<void*>(self), __self());
 
     // Method在 Art虚拟机中的对象 ArtMethod 的基地址
     jlong art_method = (jlong) env->FromReflectedMethod(method);
@@ -464,10 +463,10 @@ jlong epic_getMethodAddress(JNIEnv* env, jclass clazz, jobject method) {
     //   u2 outsSize;        // unknown， 不重要
     //   u2 insSize;         // unknown， 不重要
     //   const char* name;   // 方法名
-    //   DexProto prototype;//我们可以理解这是一个代表该方法签名的字符串(包含返回值以及参数类型)
+    //   DexProto prototype; // 我们可以理解这是一个代表该方法签名的字符串(包含返回值以及参数类型)
     //   const char* shorty; // 跟上面的意义，方法的签名，like：（ILjava/lang/String）V
-    //   const u2* insns;  // 方法的指令代码
-    //   int jniArgInfo;  // jni参数信息，好像没啥用
+    //   const u2* insns;    // 方法的指令代码
+    //   int jniArgInfo;     // jni参数信息，好像没啥用
     //   // native函数指针，可能是真正的native函数，也可能是JNI桥接函数
     //   DalvikBridgeFunc nativeFunc; // hook或替换的重点字段
     //   bool fastJni;   // unknown， 不重要
@@ -480,17 +479,17 @@ jlong epic_getMethodAddress(JNIEnv* env, jclass clazz, jobject method) {
     // 对应的 native函数，也可能指向一个桥接函数。简单的说就是，在 Dalvik 下面，指向的是桥接函数;
     // 在 Art 下，指向的是 native函数。
     // - 至于这个桥接函数，它的声明如下:
-    // typedef void (＊DalvikBridgeFunc)(const u4* args, 
+    // typedef void (＊DalvikBridgeFunc)(const u4* args,
     //                                  JValue* pResult, 
     //                                  const Method* method, 
     //                                  struct Thread* self);
     // 这个桥接函数的参数我解释一下：
-    // args: 存储的是调研native方法传过来的参数，对于非static方法，args[0]存储的是this对象，
+    // args: 存储的是调研 native 方法传过来的参数，对于非static方法，args[0]存储的是this对象，
     //       args[1]存储的是第一个参数值，args[2]存储的是第二个参数值，以此类推，对于static
     //       对象，args[0]存储的是第一个参数值，args[1]存储的是第二个参数值.
     // pResult: 存储函数的返回值
-    // method: 存储与该桥接函数对应的method对象
-    // - 对于native函数，这个就简单了，看下面的代码就一目了然了:
+    // method: 存储与该桥接函数对应的 method 对象
+    // - 对于 native 函数，这个就简单了，看下面的代码就一目了然了:
     // static JNINativeMethod gMethods[] = {
     //   {
     //     "hookNativeMethod", 
@@ -505,7 +504,7 @@ jlong epic_getMethodAddress(JNIEnv* env, jclass clazz, jobject method) {
     //                  jboolean isArt)
     // env->RegisterNatives(javaClass, gMethods, 1) 
     // 在Art虚拟机下，Method结构体中存储的 nativeFuc 指针指向的就是这个 native_hook 函数.
-
+    // (这也是 jni 在 art虚拟机中的原理)
     // 我们重点关注的是art虚拟机，即：替换 nativeFuc 指针，这里返回的是 art_method，
     // 即该结构体的首地址
     jmethodID methodId = env->FromReflectedMethod(method);
@@ -664,9 +663,9 @@ static JNINativeMethod dexposedMethods[] = {
     }
 };
 
-static int registerNativeMethods(JNIEnv* env, 
+static int registerNativeMethods(JNIEnv* env,
                                  const char* className,
-                                 JNINativeMethod* gMethods, 
+                                 JNINativeMethod* gMethods,
                                  int numMethods) {
 
     jclass clazz = env->FindClass(className);
