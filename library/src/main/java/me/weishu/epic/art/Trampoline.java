@@ -68,8 +68,8 @@ class Trampoline {
         int quickCompiledCodeSize = Epic.getQuickCompiledCodeSize(originMethod);
         int sizeOfDirectJump = shellCode.sizeOfDirectJump();
         if (quickCompiledCodeSize < sizeOfDirectJump) {
-            Logger.w(TAG, originMethod.toGenericString() 
-                    + " quickCompiledCodeSize: " 
+            Logger.w(TAG, originMethod.toGenericString()
+                    + " quickCompiledCodeSize: "
                     + quickCompiledCodeSize);
 
             originMethod.setEntryPointFromQuickCompiledCode(getTrampolinePc());
@@ -98,7 +98,7 @@ class Trampoline {
         }
         trampolineSize = getSize();
         trampolineAddress = EpicNative.map(trampolineSize);
-        Logger.d(TAG, "Trampoline alloc:" + trampolineSize + 
+        Logger.d(TAG, "Trampoline alloc:" + trampolineSize +
                 ", addr: 0x" + Long.toHexString(trampolineAddress));
     }
 
@@ -141,14 +141,14 @@ class Trampoline {
     private boolean activate() {
         long pc = getTrampolinePc();
 
-        Logger.d(TAG, "Writing direct jump entry " + Debug.addrHex(pc) 
+        Logger.d(TAG, "Writing direct jump entry " + Debug.addrHex(pc)
                 + " to origin entry: 0x" + Debug.addrHex(jumpToAddress));
 
         synchronized (Trampoline.class) {
             return EpicNative.activateNative(jumpToAddress, pc,
-                                             shellCode.sizeOfDirectJump(),
-                                             shellCode.sizeOfBridgeJump(),
-                                             shellCode.createDirectJump(pc));
+                    shellCode.sizeOfDirectJump(),
+                    shellCode.sizeOfBridgeJump(),
+                    shellCode.createDirectJump(pc));
         }
     }
 
@@ -163,7 +163,7 @@ class Trampoline {
         final Class<?> returnType = methodInfo.returnType;
 
 // TODO: 2020/12/1 ing......
-        Method bridgeMethod = Runtime.is64Bit() 
+        Method bridgeMethod = Runtime.is64Bit()
                 ? Entry64.getBridgeMethod(returnType)
                 : Entry.getBridgeMethod(returnType);
 
@@ -179,6 +179,6 @@ class Trampoline {
         Logger.i(TAG, "structAddress:" + Debug.longHex(structAddress));
 
         return shellCode.createBridgeJump(targetAddress, targetEntry,
-                                          sourceAddress, structAddress);
+                sourceAddress, structAddress);
     }
 }

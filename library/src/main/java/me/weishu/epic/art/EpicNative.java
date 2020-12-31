@@ -46,15 +46,25 @@ public final class EpicNative {
     }
 
     public static native long mmap(int length);
+
     public static native boolean munmap(long address, int length);
+
     public static native void memcpy(long src, long dest, int length);
+
     public static native void memput(byte[] bytes, long dest);
+
     public static native byte[] memget(long src, int length);
+
     public static native boolean munprotect(long addr, long len);
+
     public static native long getMethodAddress(Member method);
+
     public static native boolean cacheflush(long addr, long len);
+
     public static native long malloc(int sizeOfPtr);
+
     public static native Object getObjectNative(long self, long address);
+
     private static native boolean isGetObjectAvailable();
 
     public static Object getObject(long self, long address) {
@@ -99,10 +109,10 @@ public final class EpicNative {
     public static native void startJit(long cookie);
 
     // FIXME: 17/12/29 reimplement it with pure native code.
-    static native boolean activateNative(long jumpToAddress, 
-                                         long pc, 
-                                         long sizeOfTargetJump, 
-                                         long sizeOfBridgeJump, 
+    static native boolean activateNative(long jumpToAddress,
+                                         long pc,
+                                         long sizeOfTargetJump,
+                                         long sizeOfBridgeJump,
                                          byte[] code);
 
     /**
@@ -125,7 +135,7 @@ public final class EpicNative {
 
     public static Object getObject(long address) {
         final long nativePeer = XposedHelpers.getLongField(Thread.currentThread(),
-                                                           "nativePeer");
+                "nativePeer");
         return getObject(nativePeer, address);
     }
 
@@ -136,7 +146,7 @@ public final class EpicNative {
     }
 
     public static boolean unmap(long address, int length) {
-        Logger.d(TAG, "Removing mapped memory of size " + length 
+        Logger.d(TAG, "Removing mapped memory of size " + length
                 + " at " + addrHex(address));
 
         return munmap(address, length);
@@ -163,8 +173,8 @@ public final class EpicNative {
     }
 
     public static void copy(long src, long dst, int length) {
-        Logger.d(TAG, "Copy " + length 
-                + " bytes form " + addrHex(src) 
+        Logger.d(TAG, "Copy " + length
+                + " bytes form " + addrHex(src)
                 + " to " + addrHex(dst));
 
         memcpy(src, dst, length);

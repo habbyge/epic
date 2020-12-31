@@ -67,7 +67,7 @@ public final class Epic {
             }
         }
         if (ShellCode == null) {
-            throw new RuntimeException("Do not support this ARCH now!! API LEVEL:" 
+            throw new RuntimeException("Do not support this ARCH now!! API LEVEL:"
                     + apiLevel + " thumb2 ? : " + thumb2);
         }
         Logger.i(TAG, "Using: " + ShellCode.getName());
@@ -120,7 +120,7 @@ public final class Epic {
         long originEntry = artOrigin.getEntryPointFromQuickCompiledCode();
         if (originEntry == ArtMethod.getQuickToInterpreterBridge()) {
             // compilePoint地址 与 interpretBridge 地址相同，说明还没有通过 jit 热编译.
-            Logger.i(TAG, "this method is not compiled, compile it now " + 
+            Logger.i(TAG, "this method is not compiled, compile it now " +
                     "current entry: 0x" + Long.toHexString(originEntry));
 
             // 如果要Hook的方法还未编译，则调 用ArtMethod.compile 主动进行编译，这么做也是因为 epic  是

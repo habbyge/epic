@@ -32,96 +32,96 @@
 // Android 8.0: http://androidxref.com/8.0.0_r4/xref/art/runtime/runtime.h
 
 struct Runtime_7X {
-    uint64_t callee_save_methods_[3];
-    void* pre_allocated_OutOfMemoryError_;
-    void* pre_allocated_NoClassDefFoundError_;
-    void* resolution_method_;
-    void* imt_conflict_method_;
-    
-    // Unresolved method has the same behavior as the conflict method, it is 
-    // used by the class linker for differentiating between unfilled imt slots 
-    // vs conflict slots in superclasses.
-    void* imt_unimplemented_method_;
-    void* sentinel_;
+  uint64_t callee_save_methods_[3];
+  void* pre_allocated_OutOfMemoryError_;
+  void* pre_allocated_NoClassDefFoundError_;
+  void* resolution_method_;
+  void* imt_conflict_method_;
 
-    int instruction_set_;
+  // Unresolved method has the same behavior as the conflict method, it is
+  // used by the class linker for differentiating between unfilled imt slots
+  // vs conflict slots in superclasses.
+  void* imt_unimplemented_method_;
+  void* sentinel_;
 
-    // QuickMethodFrameInfo = uint32_t * 3
-    uint32_t callee_save_method_frame_infos_[9]; 
+  int instruction_set_;
 
-    void* compiler_callbacks_;
-    bool is_zygote_;
-    bool must_relocate_;
-    bool is_concurrent_gc_enabled_;
-    bool is_explicit_gc_disabled_;
-    bool dex2oat_enabled_;
-    bool image_dex2oat_enabled_;
+  // QuickMethodFrameInfo = uint32_t * 3
+  uint32_t callee_save_method_frame_infos_[9];
 
-    std::string compiler_executable_;
-    std::string patchoat_executable_;
-    std::vector <std::string> compiler_options_;
-    std::vector <std::string> image_compiler_options_;
-    std::string image_location_;
+  void* compiler_callbacks_;
+  bool is_zygote_;
+  bool must_relocate_;
+  bool is_concurrent_gc_enabled_;
+  bool is_explicit_gc_disabled_;
+  bool dex2oat_enabled_;
+  bool image_dex2oat_enabled_;
 
-    std::string boot_class_path_string_;
-    std::string class_path_string_;
-    std::vector <std::string> properties_;
+  std::string compiler_executable_;
+  std::string patchoat_executable_;
+  std::vector <std::string> compiler_options_;
+  std::vector <std::string> image_compiler_options_;
+  std::string image_location_;
 
-    // The default stack size for managed threads created by the runtime.
-    size_t default_stack_size_;
+  std::string boot_class_path_string_;
+  std::string class_path_string_;
+  std::vector <std::string> properties_;
 
-    void* heap_;
+  // The default stack size for managed threads created by the runtime.
+  size_t default_stack_size_;
+
+  void* heap_;
 
 };
 
 struct Runtime_8X {
-    uint64_t callee_save_methods_[3];
-    void* pre_allocated_OutOfMemoryError_;
-    void* pre_allocated_NoClassDefFoundError_;
-    void* resolution_method_;
-    void* imt_conflict_method_;
+  uint64_t callee_save_methods_[3];
+  void* pre_allocated_OutOfMemoryError_;
+  void* pre_allocated_NoClassDefFoundError_;
+  void* resolution_method_;
+  void* imt_conflict_method_;
 
-    // Unresolved method has the same behavior as the conflict method, 
-    // it is used by the class linker for differentiating between unfilled 
-    // imt slots vs conflict slots in superclasses.
-    void* imt_unimplemented_method_;
-    void* sentinel_;
+  // Unresolved method has the same behavior as the conflict method,
+  // it is used by the class linker for differentiating between unfilled
+  // imt slots vs conflict slots in superclasses.
+  void* imt_unimplemented_method_;
+  void* sentinel_;
 
-    int instruction_set_;
-    // QuickMethodFrameInfo = uint32_t * 3
-    uint32_t callee_save_method_frame_infos_[9]; 
+  int instruction_set_;
+  // QuickMethodFrameInfo = uint32_t * 3
+  uint32_t callee_save_method_frame_infos_[9];
 
-    void* compiler_callbacks_;
-    bool is_zygote_;
-    bool must_relocate_;
-    bool is_concurrent_gc_enabled_;
-    bool is_explicit_gc_disabled_;
-    bool dex2oat_enabled_;
-    bool image_dex2oat_enabled_;
+  void* compiler_callbacks_;
+  bool is_zygote_;
+  bool must_relocate_;
+  bool is_concurrent_gc_enabled_;
+  bool is_explicit_gc_disabled_;
+  bool dex2oat_enabled_;
+  bool image_dex2oat_enabled_;
 
-    std::string compiler_executable_;
-    std::string patchoat_executable_;
-    std::vector <std::string> compiler_options_;
-    std::vector <std::string> image_compiler_options_;
-    std::string image_location_;
+  std::string compiler_executable_;
+  std::string patchoat_executable_;
+  std::vector <std::string> compiler_options_;
+  std::vector <std::string> image_compiler_options_;
+  std::string image_location_;
 
-    std::string boot_class_path_string_;
-    std::string class_path_string_;
-    std::vector <std::string> properties_;
+  std::string boot_class_path_string_;
+  std::string class_path_string_;
+  std::vector <std::string> properties_;
 
-    std::list<void*> agents_;
-    std::vector<void*> plugins_;
+  std::list<void*> agents_;
+  std::vector<void*> plugins_;
 
-    // The default stack size for managed threads created by the runtime.
-    size_t default_stack_size_;
+  // The default stack size for managed threads created by the runtime.
+  size_t default_stack_size_;
 
-    void* heap_;
+  void* heap_;
 
 };
 
 struct JavaVMExt {
-    void* functions;
-    void* runtime;
+  void* functions;
+  void* runtime;
 };
 
 void* getHeap(JNIEnv*, int);
