@@ -126,7 +126,7 @@ public final class Epic {
             // 如果要Hook的方法还未编译，则调 用ArtMethod.compile 主动进行编译，这么做也是因为 epic  是
             // “dynamic callee-side rewriting”。
             // ArtMethod.compile() 是通过调用JIT的jit_compile_method来完成方法编译的
-            boolean ret = artOrigin.compile();
+            boolean ret = artOrigin.compile(); // TODO: 12/31/20 ing
             if (ret) {
                 originEntry = artOrigin.getEntryPointFromQuickCompiledCode();
                 Logger.i(TAG, "compile method success, new entry: 0x" + Long.toHexString(originEntry));

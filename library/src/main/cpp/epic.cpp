@@ -157,7 +157,7 @@
 
 #define JNIHOOK_CLASS "me/weishu/epic/art/EpicNative"
 
-jobject (* addWeakGloablReference)(JavaVM*, void*, void*) = nullptr;
+jobject (*addWeakGloablReference)(JavaVM*, void*, void*) = nullptr;
 
 /**
  * Just-in-time compilation是一种动态编译，是在程序运行过程中才执行编译工作。相对于ART的核心技术
@@ -584,92 +584,92 @@ static JNINativeMethod dexposedMethods[] = {
     {
         "mmap",
         "(I)J",
-               (void*) epic_mmap
+        (void*) epic_mmap
     },
     {
         "munmap",
         "(JI)Z",
-               (void*) epic_munmap
+        (void*) epic_munmap
     },
     {
         "memcpy",
         "(JJI)V",
-               (void*) epic_memcpy
+        (void*) epic_memcpy
     },
     {
         "memput",
         "([BJ)V",
-               (void*) epic_memput
+        (void*) epic_memput
     },
     {
         "memget",
         "(JI)[B",
-               (void*) epic_memget
+        (void*) epic_memget
     },
     {
         "munprotect",
         "(JJ)Z",
-               (void*) epic_munprotect
+        (void*) epic_munprotect
     },
     {
         "getMethodAddress",
         "(Ljava/lang/reflect/Member;)J",
-               (void*) epic_getMethodAddress
+        (void*) epic_getMethodAddress
     },
     {
         "cacheflush",
         "(JJ)Z",
-               (void*) epic_cacheflush
+        (void*) epic_cacheflush
     },
     {
         "malloc",
         "(I)J",
-               (void*) epic_malloc
+        (void*) epic_malloc
     },
     {
         "getObjectNative",
         "(JJ)Ljava/lang/Object;",
-               (void*) epic_getobject},
+        (void*) epic_getobject},
 
     {
         "compileMethod",
         "(Ljava/lang/reflect/Member;J)Z",
-               (void*) epic_compile
+        (void*) epic_compile
     },
 
     {
         "suspendAll",
         "()J", (void*)
-                   epic_suspendAll
+        epic_suspendAll
     },
     {
         "resumeAll",
         "(J)V",
-               (void*) epic_resumeAll
+        (void*) epic_resumeAll
     },
     {
         "stopJit",
         "()J",
-               (void*) epic_stopJit
+        (void*) epic_stopJit
     },
     {
         "startJit",
         "(J)V",
-               (void*) epic_startJit
+        (void*) epic_startJit
     },
     {
         "disableMovingGc",
         "(I)V",
-               (void*) epic_disableMovingGc},
+        (void*) epic_disableMovingGc},
     {
         "activateNative",
         "(JJJJ[B)Z",
-               (void*) epic_activate
+        (void*) epic_activate
     },
     {
         "isGetObjectAvailable",
         "()Z",
-               (void*) epic_isGetObjectAvaliable
+        (void*) epic_isGetObjectAvaliable
     }
 };
 

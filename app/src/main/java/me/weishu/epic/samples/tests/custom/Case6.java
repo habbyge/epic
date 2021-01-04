@@ -49,16 +49,16 @@ public class Case6 implements Case {
         ArtMethod artMethod3 = ArtMethod.of(map);
         ArtMethod artMethod4 = ArtMethod.of(malloc);
 
-        Log.i(TAG, "nanoTime: addr: 0x" + artMethod1.getAddress() + ", entry:" 
+        Log.i(TAG, "nanoTime: addr: 0x" + artMethod1.getAddress() + ", entry:"
                 + Debug.addrHex(artMethod1.getEntryPointFromQuickCompiledCode()));
 
-        Log.i(TAG, "uptimeMills: addr: 0x" + artMethod2.getAddress() + ", entry:" 
+        Log.i(TAG, "uptimeMills: addr: 0x" + artMethod2.getAddress() + ", entry:"
                 + Debug.addrHex(artMethod2.getEntryPointFromQuickCompiledCode()));
 
-        Log.i(TAG, "map : addr: 0x" + artMethod3.getAddress() + ", entry:" 
+        Log.i(TAG, "map : addr: 0x" + artMethod3.getAddress() + ", entry:"
                 + Debug.addrHex(artMethod3.getEntryPointFromQuickCompiledCode()));
 
-        Log.i(TAG, "malloc: addr: 0x" + artMethod4.getAddress() + ", entry:" 
+        Log.i(TAG, "malloc: addr: 0x" + artMethod4.getAddress() + ", entry:"
                 + Debug.addrHex(artMethod4.getEntryPointFromQuickCompiledCode()));
     }
 
