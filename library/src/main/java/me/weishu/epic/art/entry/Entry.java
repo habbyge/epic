@@ -35,7 +35,6 @@ import me.weishu.epic.art.EpicNative;
 
 @SuppressWarnings({"unused", "ConstantConditions"})
 public class Entry {
-
     private final static String TAG = "Entry";
 
     private static final Object[] EMPTY_OBJECT_ARRAY = new Object[0];
@@ -434,12 +433,11 @@ public class Entry {
             }
         } else {
             int address = byteBuffer.getInt();
-            Object object = EpicNative.getObject(self, address);
-            return object;
+            return EpicNative.getObject(self, address);
         }
     }
 
-    private static Map<Class<?>, String> bridgeMethodMap = new HashMap<>();
+    private static final Map<Class<?>, String> bridgeMethodMap = new HashMap<>();
 
     static {
         Class<?>[] primitiveTypes = new Class[] {

@@ -65,9 +65,7 @@ public class NougatPolicy {
                     "performDexOpt", String.class,
                     boolean.class, int.class, boolean.class);
 
-            ret = (Boolean) performDexOpt.invoke(pm, 
-                    context.getPackageName(), 
-                    false, 2 /*install*/, true);
+            ret = (Boolean) performDexOpt.invoke(pm, context.getPackageName(), false, 2 /*install*/, true);
         } catch (Throwable e) {
             TraceLogger.e(TAG, "clear compile data failed", e);
             ret = false;
@@ -77,10 +75,7 @@ public class NougatPolicy {
 
     private static Object getPackageManagerBinderProxy() throws Exception {
         Class<?> activityThread = Class.forName("android.app.ActivityThread");
-        
-        final Method getPackageManager = activityThread
-                .getDeclaredMethod("getPackageManager");
-
+        final Method getPackageManager = activityThread.getDeclaredMethod("getPackageManager");
         return getPackageManager.invoke(null);
     }
 }

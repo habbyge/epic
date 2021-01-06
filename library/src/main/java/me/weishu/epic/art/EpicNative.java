@@ -134,8 +134,7 @@ public final class EpicNative {
     }
 
     public static Object getObject(long address) {
-        final long nativePeer = XposedHelpers.getLongField(Thread.currentThread(),
-                "nativePeer");
+        final long nativePeer = XposedHelpers.getLongField(Thread.currentThread(), "nativePeer");
         return getObject(nativePeer, address);
     }
 
@@ -146,9 +145,7 @@ public final class EpicNative {
     }
 
     public static boolean unmap(long address, int length) {
-        Logger.d(TAG, "Removing mapped memory of size " + length
-                + " at " + addrHex(address));
-
+        Logger.d(TAG, "Removing mapped memory of size " + length + " at " + addrHex(address));
         return munmap(address, length);
     }
 

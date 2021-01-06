@@ -123,10 +123,11 @@ public final class Epic {
             Logger.i(TAG, "this method is not compiled, compile it now " +
                     "current entry: 0x" + Long.toHexString(originEntry));
 
-            // 如果要Hook的方法还未编译，则调 用ArtMethod.compile 主动进行编译，这么做也是因为 epic  是
-            // “dynamic callee-side rewriting”。
-            // ArtMethod.compile() 是通过调用JIT的jit_compile_method来完成方法编译的
-            boolean ret = artOrigin.compile(); // TODO: 12/31/20 ing
+            // 如果要Hook的方法还未编译(即：上一行的函数入口地址=jit地址)，则调用 ArtMethod.compile() 主动进行编译，
+            // 这么做也是因为 epic  是 “dynamic callee-side rewriting”。
+            // ArtMethod.compile() 是通过调用JIT的jit_compile_method来完成方法编译的，目的是生成其对应的编译后的
+            // 二进制地址.
+            boolean ret = artOrigin.compile();
             if (ret) {
                 originEntry = artOrigin.getEntryPointFromQuickCompiledCode();
                 Logger.i(TAG, "compile method success, new entry: 0x" + Long.toHexString(originEntry));
@@ -137,15 +138,12 @@ public final class Epic {
             }
         }
 
-        // 为原Method创建个备份，保存到 Epic.backupMethodsMapping中。
-        // 这里原Method和备份得到的Method都是由ArtMethod对象表示
-        // 之说以
-        ArtMethod backupMethod = artOrigin.backup(); // TODO: ING
+        // 为原 Method 创建个备份，保存到 Epic.backupMethodsMapping中。
+        // 这里原 Method 和备份得到的Method都是由ArtMethod对象表示
+        ArtMethod backupMethod = artOrigin.backup();
 
         Logger.i(TAG, "backup method address:" + Debug.addrHex(backupMethod.getAddress()));
-
-        Logger.i(TAG, "backup method entry :" + Debug.addrHex(
-                backupMethod.getEntryPointFromQuickCompiledCode()));
+        Logger.i(TAG, "backup method entry :" + Debug.addrHex(backupMethod.getEntryPointFromQuickCompiledCode()));
 
         ArtMethod backupList = getBackMethod(artOrigin);
         if (backupList == null) {

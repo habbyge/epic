@@ -178,37 +178,32 @@ jobject (*addWeakGloablReference)(JavaVM*, void*, void*) = nullptr;
  * step5, 经过前面的步骤，应用程序在后续启动时，就可以根据实际情况在AOT/JIT/Interpreter中选择最合适
  *        的执行方式了。
  */
+ // JitCompilerInterface* jit_load()
 void* (*jit_load_)(bool*) = nullptr;
-
 void* jit_compiler_handle_ = nullptr;
-
 // 在 art/rumtime/jit/jit_compiler.cc 中，作用是 实时翻译运行过程中的热点函数，
 // 保存到 jitCodeCache 中
 bool (*jit_compile_method_)(void*, void*, void*, bool) = nullptr;
-
 typedef bool (*JIT_COMPILE_METHOD1)(void*, void*, void*, bool);
-
 // Android Q
 typedef bool (*JIT_COMPILE_METHOD2)(void*, void*, void*, bool, bool);
-
 void (jit_unload_)(void*) = nullptr;
 
 class ScopedSuspendAll {
 };
 
 void (*suspendAll)(ScopedSuspendAll*, char*) = nullptr;
-
 void (*resumeAll)(ScopedSuspendAll*) = nullptr;
 
 class ScopedJitSuspend {
 };
 
 void (*startJit)(ScopedJitSuspend*) = nullptr;
-
 void (*stopJit)(ScopedJitSuspend*) = nullptr;
 
 void (*DisableMovingGc)(void*) = nullptr;
 
+// 这里获取的art虚拟机中的当前Thread地址是错误的，不要使用 marked by habbyge.
 void* __self() {
 #ifdef __arm__
   register uint32_t r9 asm("r9");
@@ -246,14 +241,14 @@ void init_entries(JNIEnv* env) {
     // Android L:
     // art::JavaVMExt::AddWeakGlobalReference(art::Thread*, art::mirror::Object*)
     void* handle = dlopen("libart.so", RTLD_LAZY | RTLD_GLOBAL);
-    addWeakGloablReference = (jobject (*)(JavaVM*, void*, void*)) dlsym(
-        handle, "_ZN3art9JavaVMExt22AddWeakGlobalReferenceEPNS_6ThreadEPNS_6mirror6ObjectE");
+    addWeakGloablReference = (jobject (*)(JavaVM*, void*, void*)) dlsym(handle,
+        "_ZN3art9JavaVMExt22AddWeakGlobalReferenceEPNS_6ThreadEPNS_6mirror6ObjectE");
   } else if (api_level < 24) {
     // Android M:
     // art::JavaVMExt::AddWeakGlobalRef(art::Thread*, art::mirror::Object*)
     void* handle = dlopen("libart.so", RTLD_LAZY | RTLD_GLOBAL);
-    addWeakGloablReference = (jobject (*)(JavaVM*, void*, void*)) dlsym(
-        handle, "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadEPNS_6mirror6ObjectE")
+    addWeakGloablReference = (jobject (*)(JavaVM*, void*, void*)) dlsym(handle,
+        "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadEPNS_6mirror6ObjectE")
   } else {
     // 从 Android N 开始(api >= 24, 7.0), Google disallow us use dlsym(google不允许使用dlsym()函数了)
     // 使用解析so库(elf文件格式)的方式来解决：/proc/pid/maps得到该so库加载到进程地址空间中的基地址
@@ -270,13 +265,11 @@ void init_entries(JNIEnv* env) {
     addWeakGloablReference = (jobject (*)(JavaVM*, void*, void*))
         dlsym_ex(handle, addWeakGloablReferenceSymbol);
 
-    jit_compile_method_ = (bool (*)(void*, void*, void*, bool))
-        dlsym_ex(jit_lib, "jit_compile_method");
+    jit_compile_method_ = (bool (*)(void*, void*, void*, bool)) dlsym_ex(jit_lib, "jit_compile_method");
 
     jit_load_ = reinterpret_cast<void* (*)(bool*)>(dlsym_ex(jit_lib, "jit_load"));
     bool generate_debug_info = false;
     jit_compiler_handle_ = (jit_load_)(&generate_debug_info);
-
     LOGV("jit compile_method: %p", jit_compile_method_);
 
     suspendAll = reinterpret_cast<void (*)(ScopedSuspendAll*, char*)>(
@@ -290,9 +283,16 @@ void init_entries(JNIEnv* env) {
 }
 
 /**
- * 这里的思路，>=7.0 用 jit_compiler 手动编译目标 ArtMethod，这样入口就确定了,直接 inline hook
- * 这个quick_code入口就可以实现稳定hook，到了8.0以上入口替换就稳多了.
- * @param self art::Thread对象的 Native 地址
+ * 运行时 jit 编译生成可执行代码.
+ *
+ * 目的：
+ * 如果要Hook的方法还未编译(即：上一行的函数入口地址=jit地址)，则调用 ArtMethod.compile() 主动进行编译，这么做也
+ * 是因为 epic  是 “dynamic callee-side rewriting”。
+ * ArtMethod.compile() 是通过调用JIT的jit_compile_method来完成方法编译的，目的是生成其对应的编译后的二进制地址.
+ * 这里的思路，>=7.0 用 jit_compiler 手动编译目标 ArtMethod，这样入口就确定了, 直接 inline hook
+ *
+ * 这个 quick_code 入口就可以实现稳定 hook，到了 8.0 以上入口替换就稳多了.
+ * @param self art::Thread 对象的 Native 地址
  */
 jboolean epic_compile(JNIEnv* env, jclass, jobject method, jlong self) {
   LOGV(("self from native peer: %p, from register: %p", reinterpret_cast<void*>(self), __self());
@@ -302,7 +302,7 @@ jboolean epic_compile(JNIEnv* env, jclass, jobject method, jlong self) {
 
   // ArtMethod.compile是通过调用JIT的 jit_compile_method 来完成方法编译的，
   bool ret;
-  if (api_level >= 29) {
+  if (api_level >= 29) { // >= Andorid-10 ，这里 Android-11不适用了
     ret = ((JIT_COMPILE_METHOD2) jit_compile_method_)(jit_compiler_handle_,
                                                       reinterpret_cast<void*>(art_method),
                                                       reinterpret_cast<void*>(self),
@@ -444,7 +444,7 @@ jlong epic_malloc(JNIEnv* env, jclass, jint size) {
  * 对应：art/runtime/jni/java_vm_ext.h 中:
  * jweak AddWeakGlobalRef(Thread* self, ObjPtr<mirror::Object> obj)
  *
- * @param self 符号所在类中的Field对象
+ * @param self 当前 thread 地址
  * @param address 地址
  */
 jobject epic_getobject(JNIEnv* env, jclass clazz, jlong self, jlong address) {
@@ -452,7 +452,7 @@ jobject epic_getobject(JNIEnv* env, jclass clazz, jlong self, jlong address) {
   env->GetJavaVM(&vm);
   LOGV("java vm: %p, self: %p, address: %p", vm, (void*) self, (void*) address);
 
-  jobject object = addWeakGloablReference(vm, reinterpret_reinterpret_castcast<void*>(self),
+  jobject object = addWeakGloablReference(vm, reinterpret_castcast<void*>(self),
                                           reinterpret_cast<void*>(address));
   return object;
 }

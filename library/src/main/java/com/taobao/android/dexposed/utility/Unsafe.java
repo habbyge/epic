@@ -154,7 +154,6 @@ public final class Unsafe {
      * http://mishadoff.com/blog/java-magic-part-4-sun-dot-misc-dot-unsafe/
      *
      * @param address the address of a object.
-     * @return
      */
     public static Object getObject(long address) {
         Object[] array = new Object[]{null};
