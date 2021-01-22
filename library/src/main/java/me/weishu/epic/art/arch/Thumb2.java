@@ -19,6 +19,11 @@ package me.weishu.epic.art.arch;
 import java.nio.ByteOrder;
 
 
+/**
+ * 指令参考(指令对应的数字)：
+ * https://source.android.google.cn/devices/tech/dalvik/dalvik-bytecode?hl=zh_cn
+ * https://source.android.google.cn/devices/tech/dalvik/dex-format?hl=zh_cn
+ */
 public class Thumb2 extends ShellCode {
 
     @Override

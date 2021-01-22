@@ -178,7 +178,6 @@ class Trampoline {
         Logger.i(TAG, "targetEntry:" + Debug.longHex(targetEntry));
         Logger.i(TAG, "structAddress:" + Debug.longHex(structAddress));
 
-        return shellCode.createBridgeJump(targetAddress, targetEntry,
-                sourceAddress, structAddress);
+        return shellCode.createBridgeJump(targetAddress, targetEntry, sourceAddress, structAddress);
     }
 }

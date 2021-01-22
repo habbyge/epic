@@ -18,6 +18,11 @@ package me.weishu.epic.art.arch;
 
 import java.nio.ByteOrder;
 
+/**
+ * 指令参考(指令对应的数字)：
+ * https://source.android.google.cn/devices/tech/dalvik/dalvik-bytecode?hl=zh_cn
+ * https://source.android.google.cn/devices/tech/dalvik/dex-format?hl=zh_cn
+ */
 public class Arm64 extends ShellCode {
 
     @Override
@@ -42,11 +47,6 @@ public class Arm64 extends ShellCode {
 
     /**
      * 写入跳转指令
-     * @param targetAddress
-     * @param targetEntry
-     * @param srcAddress
-     * @param structAddress
-     * @return
      */
     @Override
     public byte[] createBridgeJump(long targetAddress, long targetEntry, 
@@ -79,17 +79,10 @@ public class Arm64 extends ShellCode {
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00  // struct
         };
 
-        writeLong(targetAddress, ByteOrder.LITTLE_ENDIAN, 
-                instructions, instructions.length - 32);
-
-        writeLong(targetEntry, ByteOrder.LITTLE_ENDIAN, 
-                instructions, instructions.length - 24);
-
-        writeLong(srcAddress, ByteOrder.LITTLE_ENDIAN, 
-                instructions, instructions.length - 16);
-
-        writeLong(structAddress, ByteOrder.LITTLE_ENDIAN, 
-                instructions, instructions.length - 8);
+        writeLong(targetAddress, ByteOrder.LITTLE_ENDIAN, instructions, instructions.length - 32);
+        writeLong(targetEntry, ByteOrder.LITTLE_ENDIAN, instructions, instructions.length - 24);
+        writeLong(srcAddress, ByteOrder.LITTLE_ENDIAN, instructions, instructions.length - 16);
+        writeLong(structAddress, ByteOrder.LITTLE_ENDIAN, instructions, instructions.length - 8);
 
         return instructions;
     }
