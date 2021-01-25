@@ -18,6 +18,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+/**
+ * Java中的System.loadLibrary(libName)，会调用到 binoc/linker.cc 中的 linker.cc 的 do_dlopen()，
+ * 本质上是 #include <fcntl.h> 中的 dlopen()等系列函数，这里实际上给我的启示是 读取so文件可以直接使用
+ * fcntl.h 中的函数.
+ */
+
 #ifndef DEXPOSED_DLFCN_H
 #define DEXPOSED_DLFCN_H
 
