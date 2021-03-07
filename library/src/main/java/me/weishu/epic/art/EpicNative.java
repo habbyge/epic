@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package me.weishu.epic.art;
 
 import android.util.Log;
@@ -46,25 +45,15 @@ public final class EpicNative {
     }
 
     public static native long mmap(int length);
-
     public static native boolean munmap(long address, int length);
-
     public static native void memcpy(long src, long dest, int length);
-
     public static native void memput(byte[] bytes, long dest);
-
     public static native byte[] memget(long src, int length);
-
     public static native boolean munprotect(long addr, long len);
-
     public static native long getMethodAddress(Member method);
-
     public static native boolean cacheflush(long addr, long len);
-
     public static native long malloc(int sizeOfPtr);
-
     public static native Object getObjectNative(long self, long address);
-
     private static native boolean isGetObjectAvailable();
 
     public static Object getObject(long self, long address) {
