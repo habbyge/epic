@@ -223,7 +223,6 @@ public final class Epic {
         return size;
     }
 
-
     public static class MethodInfo {
         public boolean isStatic;
         public int paramNumber;

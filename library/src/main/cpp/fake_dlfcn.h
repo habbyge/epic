@@ -28,7 +28,6 @@
  * 统会调用其指定的构造函数，这个调用会比JNI_OnLoad更早，其指定方式是在函数前加上属性:
  * __attribute__((constructor))。
  */
-
 #ifndef DEXPOSED_DLFCN_H
 #define DEXPOSED_DLFCN_H
 

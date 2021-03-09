@@ -28,7 +28,6 @@
  * 搜索符号表的方式，在内存中找到函数的内存地址。当然，它是有限制的：只能dlopen()已经加载进入内存
  * 的so，即系统或自己预先加载的动态库，并且参数flags加载标志被忽略。
  */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
