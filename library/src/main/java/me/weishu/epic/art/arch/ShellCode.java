@@ -19,6 +19,10 @@ package me.weishu.epic.art.arch;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+/**
+ * Arm64/Arm64_2/Thumb等类中的指令16机制，在 dexlib2 这个jar包中有定义，具体位置在:
+ * org.jf.dexlib2.Opcode 是一个枚举类.
+ */
 public abstract class ShellCode {
     /**
      * @param targetAddress 向 targetAddress 写入 跳转指令

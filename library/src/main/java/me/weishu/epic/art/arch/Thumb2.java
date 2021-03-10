@@ -75,7 +75,7 @@ public class Thumb2 extends ShellCode {
 //        writeInt((int) srcAddress, ByteOrder.LITTLE_ENDIAN, instructions,
 //                instructions.length - 4);
 
-        byte[] instructions = new byte[]{
+        byte[] instructions = new byte[] {
             // ldr ip, [pc, #48] ip = source method address
             (byte) 0xdf, (byte) 0xf8, (byte) 0x30, (byte) 0xc0, 
 
