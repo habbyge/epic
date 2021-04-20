@@ -30,8 +30,8 @@ import static com.taobao.android.dexposed.utility.Debug.addrHex;
 
 
 public final class EpicNative {
-
     private static final String TAG = "EpicNative";
+
     private static volatile boolean useUnsafe = false;
 
     static {

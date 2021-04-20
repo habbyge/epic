@@ -28,7 +28,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 public class DeviceCheck {
-
     private static final String SELECT_RUNTIME_PROPERTY = "persist.sys.dalvik.vm.lib";
     private static final String LIB_DALVIK = "libdvm.so";
     private static final String LIB_ART = "libart.so";
@@ -76,8 +75,7 @@ public class DeviceCheck {
                     return "InvocationTargetException";
                 }
             } catch (NoSuchMethodException e) {
-                return "SystemProperties.get(String key, 
-                        String def) method is not found";
+                return "SystemProperties.get(String key, String def) method is not found";
             }
         } catch (ClassNotFoundException e) {
             return "SystemProperties class is not found";
@@ -85,13 +83,9 @@ public class DeviceCheck {
     }
 
     private static boolean isSupportSDKVersion() {
-        if (android.os.Build.VERSION.SDK_INT >= 14 && 
-                android.os.Build.VERSION.SDK_INT < 20) {
-
+        if (android.os.Build.VERSION.SDK_INT >= 14 && android.os.Build.VERSION.SDK_INT < 20) {
             return true;
-        } else if (android.os.Build.VERSION.SDK_INT == 10 || 
-                android.os.Build.VERSION.SDK_INT == 9) {
-
+        } else if (android.os.Build.VERSION.SDK_INT == 10 || android.os.Build.VERSION.SDK_INT == 9) {
             return true;
         }
         return false;
@@ -161,8 +155,7 @@ public class DeviceCheck {
         String s1 = null;
         String s2 = null;
         try {
-            Method m = Class.forName("android.os.SystemProperties")
-                    .getMethod("get", String.class);
+            Method m = Class.forName("android.os.SystemProperties").getMethod("get", String.class);
             s1 = (String) m.invoke(null, "ro.yunos.version");
             s2 = (String) m.invoke(null, "java.vm.name");
         } catch (NoSuchMethodException a) {
@@ -171,8 +164,7 @@ public class DeviceCheck {
         } catch (InvocationTargetException d) {
         }
 
-        if ((s2 != null && s2.toLowerCase().contains("lemur")) 
-                || (s1 != null && s1.trim().length() > 0)) {
+        if ((s2 != null && s2.toLowerCase().contains("lemur")) || (s1 != null && s1.trim().length() > 0)) {
             return true;
         } else {
             return false;
