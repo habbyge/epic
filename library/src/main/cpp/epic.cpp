@@ -25,21 +25,18 @@
  * http://weishu.me/2017/11/23/dexposed-on-art/
  * 
  * ART有什么特别的？
- * 为什么Dexposed能够在Dalvik上为所欲为，到ART时代就不行了呢？排除其他非技术因素来讲，ART确实比
- * Dalvik复杂太多；更要命的是，从Android L到Android O，每一个Android版本中的ART变化都是天翻地
- * 覆的，大致列举一下：Android L(5.0/5.1) 上的ART是在Dalvik上的JIT编译器魔改过来的，名为quick
- * （虽然有个portable编译器，但是从未启用过）；这个编译器会做一定程度的方法内联，因此很多基于入口替
- * 换的Hook方式一上来就跪了。Android M(6.0) 上的ART编译器完全重新实现了：Optimizing。且不说之前
- * 在Android L上的Hook实现要在M上重新做一遍，这个编译器的寄存器分配比quick好太多，结果就是hook实
- * 现的时候你要是乱在栈或者寄存器上放东西，代码很容易就跑飞。Android N(7.0/7.1) N 开始采用了混合
- * 编译的方式，既有AOT也有JIT，还伴随着解释执行；混合模式对Hook影响是巨大的，以至于Xposed 直到今年
- * 才正式支持Android N。首先JIT的出现导致方法入口不固定，跑着跑着入口就变了，更麻烦的是还会有OSR
- * （栈上替换），不仅入口变了，正在运行时方法的汇编代码都可能发生变化；其次，JIT的引入带来了更深度的
- * 运行时方法内联，这些都使得虚拟机层面的Hook更为复杂。Android O(8.0) Android O的Runtime做了很
- * 多优化，传统Java VM有的一些优化手段都已经实现，比如类层次分析，循环优化，向量化等；除此之外，
- * DexCache被删除，跨dex方法内联以及Concurrent compacting GC 的引入，使得Hook技术变的扑朔迷离.
- * 可以看出，ART不仅复杂，而且还爱折腾；一言不合就魔改，甚至重写。再加上Android的碎片化，这使得实现
- * 一个稳定的虚拟机层面上运行时Java Method AOP几无可能。
+ * 为什么Dexposed能够在Dalvik上为所欲为，到ART时代就不行了呢？排除其他非技术因素来讲，ART确实比Dalvik复杂太多；更要命的是，
+ * 从Android L到Android O，每一个Android版本中的ART变化都是天翻地覆的，大致列举一下：Android L(5.0/5.1) 上的ART是在
+ * Dalvik上的JIT编译器魔改过来的，名为quick（虽然有个portable编译器，但是从未启用过）；这个编译器会做一定程度的方法内联，
+ * 因此很多基于入口替换的Hook方式一上来就跪了。Android M(6.0) 上的ART编译器完全重新实现了：Optimizing。且不说之前在Android L
+ * 上的Hook实现要在M上重新做一遍，这个编译器的寄存器分配比quick好太多，结果就是hook实现的时候你要是乱在栈或者寄存器上放东西，
+ * 代码很容易就跑飞。Android N(7.0/7.1) N 开始采用了混合编译的方式，既有AOT也有JIT，还伴随着解释执行；混合模式对Hook影响
+ * 是巨大的，以至于Xposed 直到今年才正式支持Android N。首先JIT的出现导致方法入口不固定，跑着跑着入口就变了，更麻烦的是还会有
+ * OSR（栈上替换），不仅入口变了，正在运行时方法的汇编代码都可能发生变化；其次，JIT的引入带来了更深度的运行时方法内联，这些都使得
+ * 虚拟机层面的Hook更为复杂。Android O(8.0) Android O的Runtime做了很多优化，传统Java VM有的一些优化手段都已经实现，比如类
+ * 层次分析，循环优化，向量化等；除此之外，DexCache被删除，跨dex方法内联以及Concurrent compacting GC 的引入，使得Hook技术
+ * 变的扑朔迷离.可以看出，ART不仅复杂，而且还爱折腾；一言不合就魔改，甚至重写。再加上Android的碎片化，这使得实现一个稳定的虚拟机层
+ * 面上运行时Java Method AOP几无可能。
  * 
  * 在ART中，每一个Java方法在虚拟机内部都由一个ArtMethod对象表示（Native层，实际上是一个C++对象）,
  * 这个native 的 ArtMethod对象包含了此Java方法的所有信息，比如名字，参数类型，方法本身代码的入口
@@ -178,12 +175,19 @@ jobject (*addWeakGloablReference)(JavaVM*, void*, void*) = nullptr;
  * step5, 经过前面的步骤，应用程序在后续启动时，就可以根据实际情况在AOT/JIT/Interpreter中选择最合适
  *        的执行方式了。
  */
+ // 位于：art/compiler/jit/jit_compiler.cc
  // JitCompilerInterface* jit_load()
 void* (*jit_load_)(bool*) = nullptr;
 void* jit_compiler_handle_ = nullptr;
-// 在 art/rumtime/jit/jit_compiler.cc 中，作用是 实时翻译运行过程中的热点函数，
-// 保存到 jitCodeCache 中
+// 在 art/rumtime/jit/jit_compiler.cc 中，作用是 实时翻译运行过程中的热点函数，保存到 jitCodeCache 中
 bool (*jit_compile_method_)(void*, void*, void*, bool) = nullptr;
+
+// extern "C" void* jit_load()
+using jit_load_Q = void* (*)(); // 返回 JitCompiler* const jit_compiler
+void* jit_compiler = nullptr;
+// extern "C" bool jit_compile_method(void* handle, ArtMethod* method, Thread* self, bool baseline, bool osr);
+using jit_compile_method_Q = bool (*)(void*, void*, void*, bool, bool);
+
 typedef bool (*JIT_COMPILE_METHOD1)(void*, void*, void*, bool);
 // Android Q
 typedef bool (*JIT_COMPILE_METHOD2)(void*, void*, void*, bool, bool);
@@ -249,7 +253,7 @@ void init_entries(JNIEnv* env) {
     void* handle = dlopen("libart.so", RTLD_LAZY | RTLD_GLOBAL);
     addWeakGloablReference = (jobject (*)(JavaVM*, void*, void*)) dlsym(handle,
         "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadEPNS_6mirror6ObjectE")
-  } else if (api_level <= 29) { // TODO: <android-10> ......................................................
+  } else if (api_level < 29) { // TODO: <android-10> ......................................................
     // 从 Android N 开始(api >= 24, 7.0), Google disallow us use dlsym(google不允许使用dlsym()函数了)
     // 使用解析so库(elf文件格式)的方式来解决：/proc/pid/maps得到该so库加载到进程地址空间中的基地址
     void* handle = dlopen_ex("libart.so", RTLD_NOW);
@@ -281,6 +285,10 @@ void init_entries(JNIEnv* env) {
 
     suspendAll = reinterpret_cast<void (*)(ScopedSuspendAll*, char*)>(dlsym_ex(handle, "_ZN3art16ScopedSuspendAllC1EPKcb"));
     resumeAll = reinterpret_cast<void (*)(ScopedSuspendAll*)>(dlsym_ex(handle, "_ZN3art16ScopedSuspendAllD1Ev"));
+  } else if (api_level == 29) {
+    // TODO: Android-10(Q、29) 同理上面
+  } else {
+    // TODO: api >= Android-11(30) 同理上面
   }
 
   LOGV("addWeakGloablReference: %p", addWeakGloablReference);
