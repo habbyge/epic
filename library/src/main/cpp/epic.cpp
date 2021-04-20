@@ -181,16 +181,23 @@ void* (*jit_load_)(bool*) = nullptr;
 void* jit_compiler_handle_ = nullptr;
 // 在 art/rumtime/jit/jit_compiler.cc 中，作用是 实时翻译运行过程中的热点函数，保存到 jitCodeCache 中
 bool (*jit_compile_method_)(void*, void*, void*, bool) = nullptr;
+typedef bool (*JIT_COMPILE_METHOD1)(void*, void*, void*, bool);
 
+// ------------------ Android Q ------------------
 // extern "C" void* jit_load()
 using jit_load_Q = void* (*)(); // 返回 JitCompiler* const jit_compiler
-void* jit_compiler = nullptr;
+void* jit_compiler_Q = nullptr;
 // extern "C" bool jit_compile_method(void* handle, ArtMethod* method, Thread* self, bool baseline, bool osr);
 using jit_compile_method_Q = bool (*)(void*, void*, void*, bool, bool);
-
-typedef bool (*JIT_COMPILE_METHOD1)(void*, void*, void*, bool);
-// Android Q
 typedef bool (*JIT_COMPILE_METHOD2)(void*, void*, void*, bool, bool);
+
+// ------------------ Android R ------------------
+// extern "C" JitCompilerInterface* jit_load
+using jit_load_R = void* (*)();
+using jit_compiler_R = nullptr;
+// bool JitCompiler::CompileMethod(Thread* self, JitMemoryRegion* region, ArtMethod* method, bool baseline, bool osr)
+using jit_compile_method_R = bool (*)(void*, void*, void*, void*, bool, bool);
+
 void (jit_unload_)(void*) = nullptr;
 
 class ScopedSuspendAll {
