@@ -25,21 +25,18 @@
  * http://weishu.me/2017/11/23/dexposed-on-art/
  * 
  * ART有什么特别的？
- * 为什么Dexposed能够在Dalvik上为所欲为，到ART时代就不行了呢？排除其他非技术因素来讲，ART确实比
- * Dalvik复杂太多；更要命的是，从Android L到Android O，每一个Android版本中的ART变化都是天翻地
- * 覆的，大致列举一下：Android L(5.0/5.1) 上的ART是在Dalvik上的JIT编译器魔改过来的，名为quick
- * （虽然有个portable编译器，但是从未启用过）；这个编译器会做一定程度的方法内联，因此很多基于入口替
- * 换的Hook方式一上来就跪了。Android M(6.0) 上的ART编译器完全重新实现了：Optimizing。且不说之前
- * 在Android L上的Hook实现要在M上重新做一遍，这个编译器的寄存器分配比quick好太多，结果就是hook实
- * 现的时候你要是乱在栈或者寄存器上放东西，代码很容易就跑飞。Android N(7.0/7.1) N 开始采用了混合
- * 编译的方式，既有AOT也有JIT，还伴随着解释执行；混合模式对Hook影响是巨大的，以至于Xposed 直到今年
- * 才正式支持Android N。首先JIT的出现导致方法入口不固定，跑着跑着入口就变了，更麻烦的是还会有OSR
- * （栈上替换），不仅入口变了，正在运行时方法的汇编代码都可能发生变化；其次，JIT的引入带来了更深度的
- * 运行时方法内联，这些都使得虚拟机层面的Hook更为复杂。Android O(8.0) Android O的Runtime做了很
- * 多优化，传统Java VM有的一些优化手段都已经实现，比如类层次分析，循环优化，向量化等；除此之外，
- * DexCache被删除，跨dex方法内联以及Concurrent compacting GC 的引入，使得Hook技术变的扑朔迷离.
- * 可以看出，ART不仅复杂，而且还爱折腾；一言不合就魔改，甚至重写。再加上Android的碎片化，这使得实现
- * 一个稳定的虚拟机层面上运行时Java Method AOP几无可能。
+ * 为什么Dexposed能够在Dalvik上为所欲为，到ART时代就不行了呢？排除其他非技术因素来讲，ART确实比Dalvik复杂太多；更要命的是，
+ * 从Android L到Android O，每一个Android版本中的ART变化都是天翻地覆的，大致列举一下：Android L(5.0/5.1) 上的ART是在
+ * Dalvik上的JIT编译器魔改过来的，名为quick（虽然有个portable编译器，但是从未启用过）；这个编译器会做一定程度的方法内联，
+ * 因此很多基于入口替换的Hook方式一上来就跪了。Android M(6.0) 上的ART编译器完全重新实现了：Optimizing。且不说之前在Android L
+ * 上的Hook实现要在M上重新做一遍，这个编译器的寄存器分配比quick好太多，结果就是hook实现的时候你要是乱在栈或者寄存器上放东西，
+ * 代码很容易就跑飞。Android N(7.0/7.1) N 开始采用了混合编译的方式，既有AOT也有JIT，还伴随着解释执行；混合模式对Hook影响
+ * 是巨大的，以至于Xposed 直到今年才正式支持Android N。首先JIT的出现导致方法入口不固定，跑着跑着入口就变了，更麻烦的是还会有
+ * OSR（栈上替换），不仅入口变了，正在运行时方法的汇编代码都可能发生变化；其次，JIT的引入带来了更深度的运行时方法内联，这些都使得
+ * 虚拟机层面的Hook更为复杂。Android O(8.0) Android O的Runtime做了很多优化，传统Java VM有的一些优化手段都已经实现，比如类
+ * 层次分析，循环优化，向量化等；除此之外，DexCache被删除，跨dex方法内联以及Concurrent compacting GC 的引入，使得Hook技术
+ * 变的扑朔迷离.可以看出，ART不仅复杂，而且还爱折腾；一言不合就魔改，甚至重写。再加上Android的碎片化，这使得实现一个稳定的虚拟机层
+ * 面上运行时Java Method AOP几无可能。
  * 
  * 在ART中，每一个Java方法在虚拟机内部都由一个ArtMethod对象表示（Native层，实际上是一个C++对象）,
  * 这个native 的 ArtMethod对象包含了此Java方法的所有信息，比如名字，参数类型，方法本身代码的入口
@@ -187,12 +184,25 @@ jobject (*addWeakGloablReference)(JavaVM*, void*, void*) = nullptr;
 // JitCompilerInterface* (*Jit::jit_load_)() = nullptr;
 void* (*jit_load_)(bool*) = nullptr;
 void* jit_compiler_handle_ = nullptr;
-// 在 art/rumtime/jit/jit_compiler.cc 中，作用是 实时翻译运行过程中的热点函数，
-// 保存到 jitCodeCache 中
+// 在 art/rumtime/jit/jit_compiler.cc 中，作用是 实时翻译运行过程中的热点函数，保存到 jitCodeCache 中
 bool (*jit_compile_method_)(void*, void*, void*, bool) = nullptr;
 typedef bool (*JIT_COMPILE_METHOD1)(void*, void*, void*, bool);
-// Android Q
+
+// ------------------ Android Q ------------------
+// extern "C" void* jit_load()
+using jit_load_Q = void* (*)(); // 返回 JitCompiler* const jit_compiler
+void* jit_compiler_Q = nullptr;
+// extern "C" bool jit_compile_method(void* handle, ArtMethod* method, Thread* self, bool baseline, bool osr);
+using jit_compile_method_Q = bool (*)(void*, void*, void*, bool, bool);
 typedef bool (*JIT_COMPILE_METHOD2)(void*, void*, void*, bool, bool);
+
+// ------------------ Android R ------------------
+// extern "C" JitCompilerInterface* jit_load
+using jit_load_R = void* (*)();
+using jit_compiler_R = nullptr;
+// bool JitCompiler::CompileMethod(Thread* self, JitMemoryRegion* region, ArtMethod* method, bool baseline, bool osr)
+using jit_compile_method_R = bool (*)(void*, void*, void*, void*, bool, bool);
+
 void (jit_unload_)(void*) = nullptr;
 
 class ScopedSuspendAll {
@@ -255,7 +265,7 @@ void init_entries(JNIEnv* env) {
     void* handle = dlopen("libart.so", RTLD_LAZY | RTLD_GLOBAL);
     addWeakGloablReference = (jobject (*)(JavaVM*, void*, void*)) dlsym(handle,
         "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadEPNS_6mirror6ObjectE")
-  } else {
+  } else if (api_level < 29) { // TODO: <android-10> ......................................................
     // 从 Android N 开始(api >= 24, 7.0), Google disallow us use dlsym(google不允许使用dlsym()函数了)
     // 使用解析so库(elf文件格式)的方式来解决：/proc/pid/maps得到该so库加载到进程地址空间中的基地址
     void* handle = dlopen_ex("libart.so", RTLD_NOW);
@@ -269,8 +279,17 @@ void init_entries(JNIEnv* env) {
           : "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadENS_6ObjPtrINS_6mirror6ObjectEEE";
 
     addWeakGloablReference = (jobject (*)(JavaVM*, void*, void*)) dlsym_ex(handle, addWeakGloablReferenceSymbol);
+
+    // 在libart.so中查找更好：
+    // flame:/apex/com.android.art/lib64 $ readelf -s libart.so | grep 'jit_compile'
+    //  2394: 00000000006ab610     8 OBJECT  GLOBAL PROTECTED 23 _ZN3art3jit3Jit13jit_compiler_E
+    // 23991: 00000000006ab610     8 OBJECT  GLOBAL PROTECTED 23 _ZN3art3jit3Jit13jit_compiler_E
     jit_compile_method_ = (bool (*)(void*, void*, void*, bool)) dlsym_ex(jit_lib, "jit_compile_method");
 
+    // 在libart.so中查找更好：
+    // readelf -s libart.so | grep 'jit_load'
+    //  2163: 00000000006ab618     8 OBJECT  GLOBAL PROTECTED 23 _ZN3art3jit3Jit9jit_load_E
+    // 24101: 00000000006ab618     8 OBJECT  GLOBAL PROTECTED 23 _ZN3art3jit3Jit9jit_load_E
     jit_load_ = reinterpret_cast<void* (*)(bool*)>(dlsym_ex(jit_lib, "jit_load"));
     bool generate_debug_info = false;
     jit_compiler_handle_ = (jit_load_)(&generate_debug_info);
@@ -278,6 +297,10 @@ void init_entries(JNIEnv* env) {
 
     suspendAll = reinterpret_cast<void (*)(ScopedSuspendAll*, char*)>(dlsym_ex(handle, "_ZN3art16ScopedSuspendAllC1EPKcb"));
     resumeAll = reinterpret_cast<void (*)(ScopedSuspendAll*)>(dlsym_ex(handle, "_ZN3art16ScopedSuspendAllD1Ev"));
+  } else if (api_level == 29) {
+    // TODO: Android-10(Q、29) 同理上面
+  } else {
+    // TODO: api >= Android-11(30) 同理上面
   }
 
   LOGV("addWeakGloablReference: %p", addWeakGloablReference);
@@ -295,7 +318,7 @@ void init_entries(JNIEnv* env) {
  * 这个 quick_code 入口就可以实现稳定 hook，到了 8.0 以上入口替换就稳多了.
  * @param self art::Thread 对象的 Native 地址
  */
-jboolean epic_compile(JNIEnv* env, jclass, jobject method, jlong self) {
+jboolean epic_compile(JNIEnv*, jclass, jobject, jlong) {
   LOGV(("self from native peer: %p, from register: %p", reinterpret_cast<void*>(self), __self());
 
   // Method在 Art虚拟机中的对象 ArtMethod 的基地址
@@ -572,96 +595,97 @@ jboolean epic_activate(JNIEnv* env, jclass jclazz, jlong jumpToAddress, jlong si
 }
 
 static JNINativeMethod dexposedMethods[] = {
-    {
-        "mmap",
-        "(I)J",
-        (void*) epic_mmap
-    },
-    {
-        "munmap",
-        "(JI)Z",
-        (void*) epic_munmap
-    },
-    {
-        "memcpy",
-        "(JJI)V",
-        (void*) epic_memcpy
-    },
-    {
-        "memput",
-        "([BJ)V",
-        (void*) epic_memput
-    },
-    {
-        "memget",
-        "(JI)[B",
-        (void*) epic_memget
-    },
-    {
-        "munprotect",
-        "(JJ)Z",
-        (void*) epic_munprotect
-    },
-    {
-        "getMethodAddress",
-        "(Ljava/lang/reflect/Member;)J",
-        (void*) epic_getMethodAddress
-    },
-    {
-        "cacheflush",
-        "(JJ)Z",
-        (void*) epic_cacheflush
-    },
-    {
-        "malloc",
-        "(I)J",
-        (void*) epic_malloc
-    },
-    {
-        "getObjectNative",
-        "(JJ)Ljava/lang/Object;",
-        (void*) epic_getobject},
+  {
+    "mmap",
+    "(I)J",
+    (void*) epic_mmap
+  },
+  {
+    "munmap",
+    "(JI)Z",
+    (void*) epic_munmap
+  },
+  {
+    "memcpy",
+    "(JJI)V",
+    (void*) epic_memcpy
+  },
+  {
+    "memput",
+    "([BJ)V",
+    (void*) epic_memput
+  },
+  {
+    "memget",
+    "(JI)[B",
+    (void*) epic_memget
+  },
+  {
+    "munprotect",
+    "(JJ)Z",
+    (void*) epic_munprotect
+  },
+  {
+    "getMethodAddress",
+    "(Ljava/lang/reflect/Member;)J",
+    (void*) epic_getMethodAddress
+  },
+  {
+    "cacheflush",
+    "(JJ)Z",
+    (void*) epic_cacheflush
+  },
+  {
+    "malloc",
+    "(I)J",
+    (void*) epic_malloc
+  },
+  {
+    "getObjectNative",
+    "(JJ)Ljava/lang/Object;",
+    (void*) epic_getobject
+  },
 
-    {
-        "compileMethod",
-        "(Ljava/lang/reflect/Member;J)Z",
-        (void*) epic_compile
-    },
+  {
+    "compileMethod",
+    "(Ljava/lang/reflect/Member;J)Z",
+    (void*) epic_compile
+  },
 
-    {
-        "suspendAll",
-        "()J", (void*)
-        epic_suspendAll
-    },
-    {
-        "resumeAll",
-        "(J)V",
-        (void*) epic_resumeAll
-    },
-    {
-        "stopJit",
-        "()J",
-        (void*) epic_stopJit
-    },
-    {
-        "startJit",
-        "(J)V",
-        (void*) epic_startJit
-    },
-    {
-        "disableMovingGc",
-        "(I)V",
-        (void*) epic_disableMovingGc},
-    {
-        "activateNative",
-        "(JJJJ[B)Z",
-        (void*) epic_activate
-    },
-    {
-        "isGetObjectAvailable",
-        "()Z",
-        (void*) epic_isGetObjectAvaliable
-    }
+  {
+    "suspendAll",
+    "()J",
+    (void*) epic_suspendAll
+  },
+  {
+    "resumeAll",
+    "(J)V",
+    (void*) epic_resumeAll
+  },
+  {
+    "stopJit",
+    "()J",
+    (void*) epic_stopJit
+  },
+  {
+    "startJit",
+    "(J)V",
+    (void*) epic_startJit
+  },
+  {
+    "disableMovingGc",
+    "(I)V",
+    (void*) epic_disableMovingGc},
+  {
+    "activateNative",
+    "(JJJJ[B)Z",
+    (void*) epic_activate
+  },
+  {
+    "isGetObjectAvailable",
+    "()Z",
+    (void*) epic_isGetObjectAvaliable
+  }
 };
 
 static int registerNativeMethods(JNIEnv* env, const char* className, JNINativeMethod* gMethods, int numMethods) {

@@ -69,9 +69,7 @@
  */
 typedef struct ctx {
   void* load_addr; // so库文件加载到进程中的基地址，来自 /proc/pid/maps
-
   void* dynstr;    // 名称字符串表(Section)
-
   void* dynsym;    // 符号表(Section)
   int nsyms;       // 符号表中的符号item条数
 
@@ -202,43 +200,43 @@ static void* fake_dlopen_with_path(const char* libpath, int flags) {
     log_dbg("%s: i=%d shdr=%p type=%x", __func__, i, sh, sh->sh_type);
 
     switch (sh->sh_type) {
-      case SHT_DYNSYM: { // 符号表 .dynsym
-        if (ctx->dynsym) {
-          fatal("%s: duplicate DYNSYM sections", libpath); /* .dynsym */
-        }
-        ctx->dynsym = malloc(sh->sh_size);
-        if (!ctx->dynsym) {
-          fatal("%s: no memory for .dynsym", libpath);
-        }
-        memcpy(ctx->dynsym, ((char*) elf) + sh->sh_offset, sh->sh_size);
-        ctx->nsyms = (sh->sh_size / sizeof(Elf_Sym));
+    case SHT_DYNSYM: { // 符号表 .dynsym
+      if (ctx->dynsym) {
+        fatal("%s: duplicate DYNSYM sections", libpath); /* .dynsym */
       }
-        break;
+      ctx->dynsym = malloc(sh->sh_size);
+      if (!ctx->dynsym) {
+        fatal("%s: no memory for .dynsym", libpath);
+      }
+      memcpy(ctx->dynsym, ((char*) elf) + sh->sh_offset, sh->sh_size);
+      ctx->nsyms = (sh->sh_size / sizeof(Elf_Sym));
+    }
+    break;
 
-      case SHT_STRTAB: { // 字符串(名字)表 .dynstr
-        if (ctx->dynstr) {
-          break;    /* .dynstr is guaranteed to be the first STRTAB */
-        }
-        ctx->dynstr = malloc(sh->sh_size);
-        if (!ctx->dynstr) {
-          fatal("%s: no memory for .dynstr", libpath);
-        }
-        memcpy(ctx->dynstr, ((char*) elf) + sh->sh_offset, sh->sh_size);
+    case SHT_STRTAB: { // 字符串(名字)表 .dynstr
+      if (ctx->dynstr) {
+        break;    /* .dynstr is guaranteed to be the first STRTAB */
       }
-        break;
+      ctx->dynstr = malloc(sh->sh_size);
+      if (!ctx->dynstr) {
+        fatal("%s: no memory for .dynstr", libpath);
+      }
+      memcpy(ctx->dynstr, ((char*) elf) + sh->sh_offset, sh->sh_size);
+    }
+    break;
 
-      case SHT_PROGBITS: {
-        if (!ctx->dynstr || !ctx->dynsym) {
-          break;
-        }
-        // won't even bother checking against the section name
-        // - sh_addr: 该节在ELF文件被加载到进程地址空间中后的偏移量，其在进程中的真实地址是:
-        // load_addr+sh->sh_addr.
-        // - sh_offset 在elf文件中的偏移量
-        ctx->bias = (off_t) sh->sh_addr - (off_t) sh->sh_offset;
-        i = elf->e_shnum;  /* exit for */
-      }
+    case SHT_PROGBITS: {
+      if (!ctx->dynstr || !ctx->dynsym) {
         break;
+      }
+      // won't even bother checking against the section name
+      // - sh_addr: 该节在ELF文件被加载到进程地址空间中后的偏移量，其在进程中的真实地址是:
+      // load_addr+sh->sh_addr.
+      // - sh_offset 在elf文件中的偏移量
+      ctx->bias = (off_t) sh->sh_addr - (off_t) sh->sh_offset;
+      i = elf->e_shnum;  /* exit for */
+    }
+    break;
 
     }
   }
