@@ -273,17 +273,17 @@ void init_entries(JNIEnv* env) {
 
     LOGV("fake dlopen install: %p", handle);
 
-    // 注意 libart.so 中的符号都是加过密的
+    // 注意 libart.so 中的符号都是安札C++符号命名规则
     const char* addWeakGloablReferenceSymbol =
         api_level <= 25 ? "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadEPNS_6mirror6ObjectE"
-          : "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadENS_6ObjPtrINS_6mirror6ObjectEEE";
+            : "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadENS_6ObjPtrINS_6mirror6ObjectEEE";
 
     addWeakGloablReference = (jobject (*)(JavaVM*, void*, void*)) dlsym_ex(handle, addWeakGloablReferenceSymbol);
 
     // 在libart.so中查找更好：
     // flame:/apex/com.android.art/lib64 $ readelf -s libart.so | grep 'jit_compile'
     //  2394: 00000000006ab610     8 OBJECT  GLOBAL PROTECTED 23 _ZN3art3jit3Jit13jit_compiler_E
-    // 23991: 00000000006ab610     8 OBJECT  GLOBAL PROTECTED 23 _ZN3art3jit3Jit13jit_compiler_E
+    // 23991: 00000000006ab610     8 OBJECT  GLOBAL PROTECTED 23 _ZN3art3jit3Jit13jit_compiler_E 
     jit_compile_method_ = (bool (*)(void*, void*, void*, bool)) dlsym_ex(jit_lib, "jit_compile_method");
 
     // 在libart.so中查找更好：
