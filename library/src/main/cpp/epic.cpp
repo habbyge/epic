@@ -273,12 +273,12 @@ void init_entries(JNIEnv* env) {
 
     // Android L, art::JavaVMExt::AddWeakGlobalReference(art::Thread*, art::mirror::Object*)
     void* handle = dlopen("libart.so", RTLD_LAZY | RTLD_GLOBAL);
-    addWeakGloablReference = (jobject (*)(JavaVM*, void*, void*)) dlsym(handle,
+    AddWeakGlobalReference = (jobject (*)(JavaVM*, void*, void*)) dlsym(handle,
         "_ZN3art9JavaVMExt22AddWeakGlobalReferenceEPNS_6ThreadEPNS_6mirror6ObjectE");
   } else if (api_level < 24) { // 6.0
     // Android M, art::JavaVMExt::AddWeakGlobalRef(art::Thread*, art::mirror::Object*)
     void* handle = dlopen("libart.so", RTLD_LAZY | RTLD_GLOBAL);
-    addWeakGloablReference = (jobject (*)(JavaVM*, void*, void*)) dlsym(handle,
+    AddWeakGlobalReference = (jobject (*)(JavaVM*, void*, void*)) dlsym(handle,
         "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadEPNS_6mirror6ObjectE")
 
 //  } else if (api_level < 29) { // 7.0/7.1/8.0/8.1/9
@@ -291,11 +291,11 @@ void init_entries(JNIEnv* env) {
 //    LOGV("fake dlopen install: %p", handle);
 //
 //    // 注意 libart.so 中的符号都是安札C++符号命名规则
-//    const char* addWeakGloablReferenceSymbol =
+//    const char* addWeakGlobalReferenceSymbol =
 //        api_level <= 25 ? "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadEPNS_6mirror6ObjectE"
 //            : "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadENS_6ObjPtrINS_6mirror6ObjectEEE";
 //
-//    addWeakGloablReference = (jobject (*)(JavaVM*, void*, void*)) dlsym_ex(handle, addWeakGloablReferenceSymbol);
+//    AddWeakGlobalReference = (jobject (*)(JavaVM*, void*, void*)) dlsym_ex(handle, addWeakGlobalReferenceSymbol);
 //
 //    // 在libart.so中查找更好：
 //    // flame:/apex/com.android.art/lib64 $ readelf -s libart.so | grep 'jit_compile'
@@ -324,12 +324,11 @@ void init_entries(JNIEnv* env) {
     void* handle = dlopen_ex("libart.so", RTLD_NOW);
     void* jit_lib = dlopen_ex("libart-compiler.so", RTLD_NOW);
     LOGV("fake dlopen install: %p", handle);
-    const char* addWeakGloablReferenceSymbol = api_level <= 25
+    const char* addWeakGlobalReferenceSymbol = api_level <= 25
         ? "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadEPNS_6mirror6ObjectE"
         : "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadENS_6ObjPtrINS_6mirror6ObjectEEE";
 
-    addWeakGloablReference = (jobject (*)(JavaVM*, void*, void*)) dlsym_ex(
-        handle, addWeakGloablReferenceSymbol);
+    AddWeakGlobalReference = (jobject (*)(JavaVM*, void*, void*)) dlsym_ex(handle, addWeakGlobalReferenceSymbol);
 
     jit_compile_method_ = (bool (*)(void*, void*, void*, bool)) dlsym_ex(jit_lib, "jit_compile_method");
     jit_load_ = reinterpret_cast<void* (*)(bool*)>(dlsym_ex(jit_lib, "jit_load"));
@@ -362,7 +361,7 @@ void init_entries(JNIEnv* env) {
     // DisableMovingGc = reinterpret_cast<void(*)(void*)>(dlsym_ex(handle, "_ZN3art2gc4Heap15DisableMovingGcEv"));
   }
 
-  LOGV("addWeakGloablReference: %p", addWeakGloablReference);
+  LOGV("AddWeakGlobalReference: %p", AddWeakGlobalReference);
 }
 
 /**
@@ -552,7 +551,7 @@ jobject epic_getobject(JNIEnv* env, jclass clazz, jlong self, jlong address) {
   JavaVM* vm;
   env->GetJavaVM(&vm);
   LOGV("java vm: %p, self: %p, address: %p", vm, (void*) self, (void*) address);
-  jobject object = addWeakGloablReference(vm, (void*) self, (void*) address);
+  jobject object = AddWeakGlobalReference(vm, (void*) self, (void*) address);
 
   return object;
 }
@@ -624,7 +623,7 @@ jlong epic_getMethodAddress(JNIEnv* env, jclass clazz, jobject method) {
 }
 
 jboolean epic_isGetObjectAvaliable(JNIEnv*, jclass) {
-  return (jboolean)(addWeakGloablReference != nullptr);
+  return (jboolean)(AddWeakGlobalReference != nullptr);
 }
 
 jlong pc, jlong
