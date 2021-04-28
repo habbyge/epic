@@ -160,4 +160,10 @@ private:
   static int api;
 };
 
+enum class CompilationKind {
+  kOsr,
+  kBaseline,
+  kOptimized,
+};
+
 #endif //EPIC_ART_H

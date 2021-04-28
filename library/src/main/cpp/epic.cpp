@@ -131,16 +131,18 @@
  * 
  * trampoline2 蹦床函数
  */
-
-#include <jni.h>
 #include <android/log.h>
 #include <sys/mman.h>
+#include <sys/system_properties.h>
+
+#include <jni.h>
 #include <errno.h>
 #include <unistd.h>
 #include <dlfcn.h>
 #include <cstdlib>
-#include <sys/system_properties.h>
 #include <fcntl.h>
+
+#include "epic.h"
 #include "fake_dlfcn.h"
 #include "art.h"
 
@@ -155,6 +157,7 @@
 #define JNIHOOK_CLASS "me/weishu/epic/art/EpicNative"
 
 // 实现把 art::mirror::Object 转换为 jobject对象，这样我们可以通过JNI进而转化为Java对象
+// jweak AddWeakGlobalRef(Thread* self, ObjPtr<mirror::Object> obj)
 jobject (*AddWeakGlobalReference)(JavaVM*, void*, void*) = nullptr;
 
 /**
@@ -183,39 +186,11 @@ jobject (*AddWeakGlobalReference)(JavaVM*, void*, void*) = nullptr;
 // void* Jit::jit_library_handle_ = nullptr;
 // JitCompilerInterface* Jit::jit_compiler_ = nullptr;
 // JitCompilerInterface* (*Jit::jit_load_)() = nullptr;
-void* (*jit_load_)(bool*) = nullptr;
-void* jit_compiler_handle_ = nullptr; // 即: JitCompiler*，也就是jit执行器对象
-// 在 art/rumtime/jit/jit_compiler.cc 中，作用是 实时翻译运行过程中的热点函数，保存到 jitCodeCache 中
-bool (*jit_compile_method_)(void*, void*, void*, bool) = nullptr; // jit解释器编译函数
 
 // todo --------------------------------------------------------------------------------------
 void* (*JitCodeCache_GetCurrentRegion)(void*) = nullptr;
 
-typedef bool (*JIT_COMPILE_METHOD1)(void *, void *, void *, bool);
-typedef bool (*JIT_COMPILE_METHOD2)(void *, void *, void *, bool, bool); // Android 10
-typedef bool (*JIT_COMPILE_METHOD3)(void *, void *, void *, void *, bool, bool); // Android 11
-
-// todo  ------------------ Android 7.0/7.1/8.0/8.1/9/10 ------------------
-// extern "C" void* jit_load()
-const char* jit_load_SYM_7_10 = "jit_load";
-using jit_load_7_10 = void* (*)(); // 返回 JitCompiler* const jit_compiler
-void* jit_compiler_7_10 = nullptr;
-const char* CompileMethod_SYM_7_10 = "jit_compile_method";
-// extern "C" bool jit_compile_method(void* handle, ArtMethod* method, Thread* self, bool baseline, bool osr);
-using jit_compile_method_7_10 = bool (*)(void*, void*, void*, bool, bool);
-typedef bool (*JIT_COMPILE_METHOD2)(void*, void*, void*, bool, bool);
-
-// todo ------------------ Android 11 ------------------
-// readelf -s libart-compiler.so | grep 'jit_compile_method'
-// extern "C" JitCompilerInterface* jit_load
-const char* jit_load_SYM_11 = "jit_load";
-using jit_load_11 = void* (*)();
-using jit_compiler_11 = nullptr;
-// bool JitCompiler::CompileMethod(Thread* self, JitMemoryRegion* region, ArtMethod* method, bool baseline, bool osr)
-// _ZN3art24ArtQuickJniCompileMethodERKNS_15CompilerOptionsEjjRKNS_7DexFileE
-// _ZNK3art18OptimizingCompiler16CanCompileMethodEjRKNS_7DexFileE
-const char* CompileMethod_SYM_11 = "_ZN3art3jit11JitCompiler13CompileMethodEPNS_6ThreadEPNS0_15JitMemoryRegionEPNS_9ArtMethodEbb";
-using jit_compile_method_11 = bool (*)(void*, void*, void*, void*, bool, bool);
+typedef bool (*JIT_COMPILE_METHOD1)(void*, void*, void*, bool);
 
 // todo ------------------------------------------------------------------
 void (*jit_unload_)(void*) = nullptr;
@@ -275,51 +250,53 @@ void init_entries(JNIEnv* env) {
     void* handle = dlopen("libart.so", RTLD_LAZY | RTLD_GLOBAL);
     AddWeakGlobalReference = (jobject (*)(JavaVM*, void*, void*)) dlsym(handle,
         "_ZN3art9JavaVMExt22AddWeakGlobalReferenceEPNS_6ThreadEPNS_6mirror6ObjectE");
-  } else if (api_level < 24) { // 6.0
+  } else if (api_level == 23) { // 6.0 M
     // Android M, art::JavaVMExt::AddWeakGlobalRef(art::Thread*, art::mirror::Object*)
     void* handle = dlopen("libart.so", RTLD_LAZY | RTLD_GLOBAL);
     AddWeakGlobalReference = (jobject (*)(JavaVM*, void*, void*)) dlsym(handle,
-        "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadEPNS_6mirror6ObjectE")
+        "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadEPNS_6mirror6ObjectE");
 
-//  } else if (api_level < 29) { // 7.0/7.1/8.0/8.1/9
-//    // 从 Android N 开始(api >= 24, 7.0), Google disallow us use dlsym(google不允许使用dlsym()函数了)
-//    // 使用解析so库(elf文件格式)的方式来解决：/proc/pid/maps得到该so库加载到进程地址空间中的基地址
-//    void* handle = dlopen_ex("libart.so", RTLD_NOW);
-//    // libart-compiler.so 对应源码目录是：art/compiler/，例如：art/compiler/jit/jit_compiler.cc
-//    void* jit_lib = dlopen_ex("libart-compiler.so", RTLD_NOW);
-//
-//    LOGV("fake dlopen install: %p", handle);
-//
-//    // 注意 libart.so 中的符号都是安札C++符号命名规则
-//    const char* addWeakGlobalReferenceSymbol =
-//        api_level <= 25 ? "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadEPNS_6mirror6ObjectE"
-//            : "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadENS_6ObjPtrINS_6mirror6ObjectEEE";
-//
-//    AddWeakGlobalReference = (jobject (*)(JavaVM*, void*, void*)) dlsym_ex(handle, addWeakGlobalReferenceSymbol);
-//
-//    // 在libart.so中查找更好：
-//    // flame:/apex/com.android.art/lib64 $ readelf -s libart.so | grep 'jit_compile'
-//    //  2394: 00000000006ab610     8 OBJECT  GLOBAL PROTECTED 23 _ZN3art3jit3Jit13jit_compiler_E
-//    // 23991: 00000000006ab610     8 OBJECT  GLOBAL PROTECTED 23 _ZN3art3jit3Jit13jit_compiler_E
-//    jit_compile_method_ = (bool (*)(void*, void*, void*, bool)) dlsym_ex(jit_lib, "jit_compile_method");
-//
-//    // 在libart.so中查找更好：
-//    // readelf -s libart.so | grep 'jit_load'
-//    //  2163: 00000000006ab618     8 OBJECT  GLOBAL PROTECTED 23 _ZN3art3jit3Jit9jit_load_E
-//    // 24101: 00000000006ab618     8 OBJECT  GLOBAL PROTECTED 23 _ZN3art3jit3Jit9jit_load_E
-//    jit_load_ = reinterpret_cast<void* (*)(bool*)>(dlsym_ex(jit_lib, "jit_load"));
-//    bool generate_debug_info = false;
-//    jit_compiler_handle_ = (jit_load_)(&generate_debug_info);
-//    LOGV("jit compile_method: %p", jit_compile_method_);
-//
-//    suspendAll = reinterpret_cast<void (*)(ScopedSuspendAll*, char*)>(dlsym_ex(handle, "_ZN3art16ScopedSuspendAllC1EPKcb"));
-//    resumeAll = reinterpret_cast<void (*)(ScopedSuspendAll*)>(dlsym_ex(handle, "_ZN3art16ScopedSuspendAllD1Ev"));
-//  } else if (api_level == 29) { // 10.0
-//    // TODO: Android-10(Q、29) 同理上面
-//  } else { // 11 ~ master
-//    // TODO: api >= Android-11(30) 同理上面
-//  }
-  } else {
+    // 获取jit compiler对象基地址
+    void* jit_lib = dlopen_ex("libart-compiler.so", RTLD_NOW);
+    auto jit_load = reinterpret_cast<jit_load_6>(dlsym_ex(jit_lib, jit_load_SYM));
+    CompilerCallbacks callbacks;
+    jit_compiler_handle_ = jit_load_6((void**) callbacks);
+    jit_compile_method_6 = reinterpret_cast<jit_compile_method_6>(dlsym_ex(jit_lib, CompileMethod_SYM_6_10));
+  } else if (api_level < 29) { // 7.0/7.1/8.0/8.1/9
+    // 从 Android N 开始(api >= 24, 7.0), Google disallow us use dlsym(google不允许使用dlsym()函数了)
+    // 使用解析so库(elf文件格式)的方式来解决：/proc/pid/maps得到该so库加载到进程地址空间中的基地址
+    void* handle = dlopen_ex("libart.so", RTLD_NOW);
+    // libart-compiler.so 对应源码目录是：art/compiler/，例如：art/compiler/jit/jit_compiler.cc
+    void* jit_lib = dlopen_ex("libart-compiler.so", RTLD_NOW)
+    LOGV("fake dlopen install: libart_so=%p, libart-compile_so=%p", handle, jit_lib);
+
+    // 注意 libart.so 中的符号都是安札C++符号命名规则
+    const char* addWeakGlobalReferenceSymbol = api_level <= 25 ?
+        "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadEPNS_6mirror6ObjectE" :
+        "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadENS_6ObjPtrINS_6mirror6ObjectEEE";
+
+    AddWeakGlobalReference = (jobject (*)(JavaVM*, void*, void*)) dlsym_ex(handle, addWeakGlobalReferenceSymbol);
+
+    // 在libart.so中查找更好：
+    // flame:/apex/com.android.art/lib64 $ readelf -s libart.so | grep 'jit_compile'
+    //  2394: 00000000006ab610     8 OBJECT  GLOBAL PROTECTED 23 _ZN3art3jit3Jit13jit_compiler_E
+    // 23991: 00000000006ab610     8 OBJECT  GLOBAL PROTECTED 23 _ZN3art3jit3Jit13jit_compiler_E
+    jit_compile_method_ = (bool (*)(void*, void*, void*, bool)) dlsym_ex(jit_lib, CompileMethod_SYM_7_10);
+
+    // 在libart.so中查找更好：
+    // readelf -s libart.so | grep 'jit_load'
+    //  2163: 00000000006ab618     8 OBJECT  GLOBAL PROTECTED 23 _ZN3art3jit3Jit9jit_load_E
+    // 24101: 00000000006ab618     8 OBJECT  GLOBAL PROTECTED 23 _ZN3art3jit3Jit9jit_load_E
+    jit_load_ = reinterpret_cast<void* (*)(bool*)>(dlsym_ex(jit_lib, "jit_load"));
+    bool generate_debug_info = false;
+    jit_compiler_handle_ = (jit_load_)(&generate_debug_info);
+    LOGV("jit compile_method: %p", jit_compile_method_);
+
+    suspendAll = reinterpret_cast<void (*)(ScopedSuspendAll*, char*)>(dlsym_ex(handle, "_ZN3art16ScopedSuspendAllC1EPKcb"));
+    resumeAll = reinterpret_cast<void (*)(ScopedSuspendAll*)>(dlsym_ex(handle, "_ZN3art16ScopedSuspendAllD1Ev"));
+  } else if (api_level == 29) { // 10.0
+    // TODO: Android-10(Q、29) 同理上面
+  } else { // 11 ~ master // TODO: api >= Android-11(30) 同理上面
     // Android N and O, Google disallow us use dlsym;
     void* handle = dlopen_ex("libart.so", RTLD_NOW);
     void* jit_lib = dlopen_ex("libart-compiler.so", RTLD_NOW);
@@ -336,10 +313,8 @@ void init_entries(JNIEnv* env) {
     jit_compiler_handle_ = (jit_load_)(&generate_debug_info);
     LOGV("jit compile_method: %p", jit_compile_method_);
 
-    suspendAll = reinterpret_cast<void (*)(ScopedSuspendAll*, char*)>(dlsym_ex(
-        handle, "_ZN3art16ScopedSuspendAllC1EPKcb"));
-    resumeAll = reinterpret_cast<void (*)(ScopedSuspendAll*)>(dlsym_ex(
-        handle, "_ZN3art16ScopedSuspendAllD1Ev"));
+    suspendAll = reinterpret_cast<void (*)(ScopedSuspendAll*, char*)>(dlsym_ex(handle, "_ZN3art16ScopedSuspendAllC1EPKcb"));
+    resumeAll = reinterpret_cast<void (*)(ScopedSuspendAll*)>(dlsym_ex(handle, "_ZN3art16ScopedSuspendAllD1Ev"));
 
     if (api_level >= 30) {
       // Android R would not directly return ArtMethod address but an internal id
@@ -389,18 +364,18 @@ jboolean epic_compile(JNIEnv* env, jclass, jobject method, jlong self) {
   bool ret;
   if (api_level >= 30) {
     void* current_region = JitCodeCache_GetCurrentRegion(ArtHelper::getJitCodeCache());
-    ret = ((JIT_COMPILE_METHOD3) jit_compile_method_)(jit_compiler_handle_,
-                                                      reinterpret_cast<void*>(self),
-                                                      reinterpret_cast<void*>(current_region),
-                                                      reinterpret_cast<void*>(art_method),
-                                                      false,
-                                                      false);
+    ret = ((jit_compile_method_11) jit_compile_method_)(jit_compiler_handle_,
+                                                        reinterpret_cast<void*>(self),
+                                                        reinterpret_cast<void*>(current_region),
+                                                        reinterpret_cast<void*>(art_method),
+                                                        false,
+                                                        false);
   } else if (api_level >= 29) {
-    ret = ((JIT_COMPILE_METHOD2) jit_compile_method_)(jit_compiler_handle_,
-                                                      reinterpret_cast<void*>(art_method),
-                                                      reinterpret_cast<void*>(self),
-                                                      false,
-                                                      false);
+    ret = ((JIT_COMPILE_METHOD_10) jit_compile_method_)(jit_compiler_handle_,
+                                                        reinterpret_cast<void*>(art_method),
+                                                        reinterpret_cast<void*>(self),
+                                                        false,
+                                                        false);
   } else {
     ret = ((JIT_COMPILE_METHOD1) jit_compile_method_)(jit_compiler_handle_,
                                                       reinterpret_cast<void*>(art_method),
