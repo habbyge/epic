@@ -37,8 +37,8 @@ import java.util.Map;
  * non-canonical method variants work with the JVM names, such as
  * {@code [I}. </p>
  *
- * @version $Id: ClassUtils.java 1199894 2011-11-09 17:53:59Z ggregory $
  * @since 2.0
+ * @version $Id: ClassUtils.java 1199894 2011-11-09 17:53:59Z ggregory $
  */
 public class ClassUtils {
 
@@ -60,8 +60,7 @@ public class ClassUtils {
     /**
      * <p>The inner class separator String: {@code "$"}.</p>
      */
-    public static final String INNER_CLASS_SEPARATOR = 
-            String.valueOf(INNER_CLASS_SEPARATOR_CHAR);
+    public static final String INNER_CLASS_SEPARATOR = String.valueOf(INNER_CLASS_SEPARATOR_CHAR);
 
     /**
      * <p>Empty string.</p>
@@ -71,9 +70,7 @@ public class ClassUtils {
     /**
      * Maps primitive {@code Class}es to their corresponding wrapper {@code Class}.
      */
-    private static final Map<Class<?>, Class<?>> primitiveWrapperMap 
-            = new HashMap<Class<?>, Class<?>>();
-
+    private static final Map<Class<?>, Class<?>> primitiveWrapperMap = new HashMap<Class<?>, Class<?>>();
     static {
         primitiveWrapperMap.put(Boolean.TYPE, Boolean.class);
         primitiveWrapperMap.put(Byte.TYPE, Byte.class);
@@ -89,9 +86,7 @@ public class ClassUtils {
     /**
      * Maps wrapper {@code Class}es to their corresponding primitive types.
      */
-    private static final Map<Class<?>, Class<?>> wrapperPrimitiveMap 
-            = new HashMap<Class<?>, Class<?>>();
-
+    private static final Map<Class<?>, Class<?>> wrapperPrimitiveMap = new HashMap<Class<?>, Class<?>>();
     static {
         for (Class<?> primitiveClass : primitiveWrapperMap.keySet()) {
             Class<?> wrapperClass = primitiveWrapperMap.get(primitiveClass);
@@ -102,23 +97,19 @@ public class ClassUtils {
     }
 
     /**
-     * Maps a primitive class name to its corresponding 
-     * abbreviation used in array class names.
+     * Maps a primitive class name to its corresponding abbreviation used in array class names.
      */
-    private static final Map<String, String> abbreviationMap 
-            = new HashMap<String, String>();
+    private static final Map<String, String> abbreviationMap = new HashMap<String, String>();
 
     /**
-     * Maps an abbreviation used in array class names 
-     * to corresponding primitive class name.
+     * Maps an abbreviation used in array class names to corresponding primitive class name.
      */
-    private static final Map<String, String> reverseAbbreviationMap
-            = new HashMap<String, String>();
+    private static final Map<String, String> reverseAbbreviationMap = new HashMap<String, String>();
 
     /**
      * Add primitive type abbreviation to maps of abbreviations.
      *
-     * @param primitive    Canonical name of primitive type
+     * @param primitive Canonical name of primitive type
      * @param abbreviation Corresponding abbreviation of primitive type
      */
     private static void addAbbreviation(String primitive, String abbreviation) {
@@ -154,12 +145,11 @@ public class ClassUtils {
 
     // Short class name
     // ----------------------------------------------------------------------
-
     /**
      * <p>Gets the class name minus the package name for an {@code Object}.</p>
      *
-     * @param object      the class to get the short name for, may be null
-     * @param valueIfNull the value to return if null
+     * @param object  the class to get the short name for, may be null
+     * @param valueIfNull  the value to return if null
      * @return the class name of the object without the package name, or the null value
      */
     public static String getShortClassName(Object object, String valueIfNull) {
@@ -176,7 +166,7 @@ public class ClassUtils {
      * The one known difference is that this code will return {@code "Map.Entry"} while
      * the {@code java.lang.Class} variant will simply return {@code "Entry"}. </p>
      *
-     * @param cls the class to get the short name for.
+     * @param cls  the class to get the short name for.
      * @return the class name without the package name or an empty string
      */
     public static String getShortClassName(Class<?> cls) {
@@ -190,12 +180,11 @@ public class ClassUtils {
      * <p>Gets the class name minus the package name from a String.</p>
      *
      * <p>The string passed in is assumed to be a class name - it is not checked.</p>
-     *
      * <p>Note that this method differs from Class.getSimpleName() in that this will
      * return {@code "Map.Entry"} whilst the {@code java.lang.Class} variant will simply
      * return {@code "Entry"}. </p>
      *
-     * @param className the className to get the short name for
+     * @param className  the className to get the short name for
      * @return the class name of the class without the package name or an empty string
      */
     public static String getShortClassName(String className) {
@@ -215,9 +204,7 @@ public class ClassUtils {
                 arrayPrefix.append("[]");
             }
             // Strip Object type encoding
-            if (className.charAt(0) == 'L' && 
-                    className.charAt(className.length() - 1) == ';') {
-
+            if (className.charAt(0) == 'L' && className.charAt(className.length() - 1) == ';') {
                 className = className.substring(1, className.length() - 1);
             }
         }
@@ -227,10 +214,8 @@ public class ClassUtils {
         }
 
         int lastDotIdx = className.lastIndexOf(PACKAGE_SEPARATOR_CHAR);
-
-        int innerIdx = className.indexOf(INNER_CLASS_SEPARATOR_CHAR, 
-                    lastDotIdx == -1 ? 0 : lastDotIdx + 1);
-
+        int innerIdx = className.indexOf(
+                INNER_CLASS_SEPARATOR_CHAR, lastDotIdx == -1 ? 0 : lastDotIdx + 1);
         String out = className.substring(lastDotIdx + 1);
         if (innerIdx != -1) {
             out = out.replace(INNER_CLASS_SEPARATOR_CHAR, PACKAGE_SEPARATOR_CHAR);
@@ -243,8 +228,8 @@ public class ClassUtils {
      *
      * @param cls the class for which to get the simple name.
      * @return the simple class name.
-     * @see Class#getSimpleName()
      * @since 3.0
+     * @see Class#getSimpleName()
      */
     public static String getSimpleName(Class<?> cls) {
         if (cls == null) {
@@ -256,11 +241,11 @@ public class ClassUtils {
     /**
      * <p>Null-safe version of <code>aClass.getSimpleName()</code></p>
      *
-     * @param object      the object for which to get the simple class name.
+     * @param object the object for which to get the simple class name.
      * @param valueIfNull the value to return if <code>object</code> is <code>null</code>
      * @return the simple class name.
-     * @see Class#getSimpleName()
      * @since 3.0
+     * @see Class#getSimpleName()
      */
     public static String getSimpleName(Object object, String valueIfNull) {
         if (object == null) {
@@ -271,12 +256,11 @@ public class ClassUtils {
 
     // Package name
     // ----------------------------------------------------------------------
-
     /**
      * <p>Gets the package name of an {@code Object}.</p>
      *
-     * @param object      the class to get the package name for, may be null
-     * @param valueIfNull the value to return if null
+     * @param object  the class to get the package name for, may be null
+     * @param valueIfNull  the value to return if null
      * @return the package name of the object, or the null value
      */
     public static String getPackageName(Object object, String valueIfNull) {
@@ -289,7 +273,7 @@ public class ClassUtils {
     /**
      * <p>Gets the package name of a {@code Class}.</p>
      *
-     * @param cls the class to get the package name for, may be {@code null}.
+     * @param cls  the class to get the package name for, may be {@code null}.
      * @return the package name or an empty string
      */
     public static String getPackageName(Class<?> cls) {
@@ -305,7 +289,7 @@ public class ClassUtils {
      * <p>The string passed in is assumed to be a class name - it is not checked.</p>
      * <p>If the class is unpackaged, return an empty string.</p>
      *
-     * @param className the className to get the package name for, may be {@code null}
+     * @param className  the className to get the package name for, may be {@code null}
      * @return the package name or an empty string
      */
     public static String getPackageName(String className) {
@@ -318,9 +302,7 @@ public class ClassUtils {
             className = className.substring(1);
         }
         // Strip Object type encoding
-        if (className.charAt(0) == 'L' && 
-                className.charAt(className.length() - 1) == ';') {
-
+        if (className.charAt(0) == 'L' && className.charAt(className.length() - 1) == ';') {
             className = className.substring(1);
         }
 
@@ -333,13 +315,12 @@ public class ClassUtils {
 
     // Superclasses/Superinterfaces
     // ----------------------------------------------------------------------
-
     /**
      * <p>Gets a {@code List} of superclasses for the given class.</p>
      *
-     * @param cls the class to look up, may be {@code null}
+     * @param cls  the class to look up, may be {@code null}
      * @return the {@code List} of superclasses in order going up from this one
-     * {@code null} if null input
+     *  {@code null} if null input
      */
     public static List<Class<?>> getAllSuperclasses(Class<?> cls) {
         if (cls == null) {
@@ -363,9 +344,9 @@ public class ClassUtils {
      * superclass is considered in the same way. Later duplicates are ignored,
      * so the order is maintained.</p>
      *
-     * @param cls the class to look up, may be {@code null}
+     * @param cls  the class to look up, may be {@code null}
      * @return the {@code List} of interfaces in order,
-     * {@code null} if null input
+     *  {@code null} if null input
      */
     public static List<Class<?>> getAllInterfaces(Class<?> cls) {
         if (cls == null) {
@@ -381,12 +362,10 @@ public class ClassUtils {
     /**
      * Get the interfaces for the specified class.
      *
-     * @param cls             the class to look up, may be {@code null}
+     * @param cls  the class to look up, may be {@code null}
      * @param interfacesFound the {@code Set} of interfaces for the class
      */
-    private static void getAllInterfaces(Class<?> cls, 
-            HashSet<Class<?>> interfacesFound) {
-
+    private static void getAllInterfaces(Class<?> cls, HashSet<Class<?>> interfacesFound) {
         while (cls != null) {
             Class<?>[] interfaces = cls.getInterfaces();
 
@@ -402,7 +381,6 @@ public class ClassUtils {
 
     // Convert list
     // ----------------------------------------------------------------------
-
     /**
      * <p>Given a {@code List} of class names, this method converts them into classes.</p>
      *
@@ -410,9 +388,9 @@ public class ClassUtils {
      * is stored in the {@code List}. If the class name in the {@code List} is
      * {@code null}, {@code null} is stored in the output {@code List}.</p>
      *
-     * @param classNames the classNames to change
+     * @param classNames  the classNames to change
      * @return a {@code List} of Class objects corresponding to the class names,
-     * {@code null} if null input
+     *  {@code null} if null input
      * @throws ClassCastException if classNames contains a non String entry
      */
     public static List<Class<?>> convertClassNamesToClasses(List<String> classNames) {
@@ -437,9 +415,9 @@ public class ClassUtils {
      * <p>A new {@code List} is returned. {@code null} objects will be copied into
      * the returned list as {@code null}.</p>
      *
-     * @param classes the classes to change
+     * @param classes  the classes to change
      * @return a {@code List} of class names corresponding to the Class objects,
-     * {@code null} if null input
+     *  {@code null} if null input
      * @throws ClassCastException if {@code classes} contains a non-{@code Class} entry
      */
     public static List<String> convertClassesToClassNames(List<Class<?>> classes) {
@@ -459,24 +437,20 @@ public class ClassUtils {
 
     // Class loading
     // ----------------------------------------------------------------------
-
     /**
      * Returns the class represented by {@code className} using the
      * {@code classLoader}.  This implementation supports the syntaxes
      * "{@code java.util.Map.Entry[]}", "{@code java.util.Map$Entry[]}",
      * "{@code [Ljava.util.Map.Entry;}", and "{@code [Ljava.util.Map$Entry;}".
      *
-     * @param classLoader the class loader to use to load the class
-     * @param className   the class name
+     * @param classLoader  the class loader to use to load the class
+     * @param className  the class name
      * @param initialize  whether the class must be initialized
      * @return the class represented by {@code className} using the {@code classLoader}
      * @throws ClassNotFoundException if the class is not found
      */
-    public static Class<?> getClass(ClassLoader classLoader, 
-                                    String className, 
-                                    boolean initialize) 
-                                    throws ClassNotFoundException {
-
+    public static Class<?> getClass(
+            ClassLoader classLoader, String className, boolean initialize) throws ClassNotFoundException {
         try {
             Class<?> clazz;
             if (abbreviationMap.containsKey(className)) {
@@ -492,9 +466,8 @@ public class ClassUtils {
 
             if (lastDotIndex != -1) {
                 try {
-                    return getClass(classLoader, className.substring(0, lastDotIndex) 
-                            + INNER_CLASS_SEPARATOR_CHAR 
-                            + className.substring(lastDotIndex + 1),
+                    return getClass(classLoader, className.substring(0, lastDotIndex) +
+                                    INNER_CLASS_SEPARATOR_CHAR + className.substring(lastDotIndex + 1),
                             initialize);
                 } catch (ClassNotFoundException ex2) { // NOPMD
                     // ignore exception
@@ -512,15 +485,12 @@ public class ClassUtils {
      * "{@code java.util.Map$Entry[]}", "{@code [Ljava.util.Map.Entry;}",
      * and "{@code [Ljava.util.Map$Entry;}".
      *
-     * @param classLoader the class loader to use to load the class
-     * @param className   the class name
+     * @param classLoader  the class loader to use to load the class
+     * @param className  the class name
      * @return the class represented by {@code className} using the {@code classLoader}
      * @throws ClassNotFoundException if the class is not found
      */
-    public static Class<?> getClass(ClassLoader classLoader, 
-                                    String className) 
-                                    throws ClassNotFoundException {
-
+    public static Class<?> getClass(ClassLoader classLoader, String className) throws ClassNotFoundException {
         return getClass(classLoader, className, true);
     }
 
@@ -531,9 +501,8 @@ public class ClassUtils {
      * "{@code java.util.Map$Entry[]}", "{@code [Ljava.util.Map.Entry;}",
      * and "{@code [Ljava.util.Map$Entry;}".
      *
-     * @param className the class name
-     * @return the class represented by {@code className} using the current 
-     *         thread's context class loader
+     * @param className  the class name
+     * @return the class represented by {@code className} using the current thread's context class loader
      * @throws ClassNotFoundException if the class is not found
      */
     public static Class<?> getClass(String className) throws ClassNotFoundException {
@@ -547,30 +516,21 @@ public class ClassUtils {
      * "{@code [Ljava.util.Map.Entry;}", and "{@code [Ljava.util.Map$Entry;}".
      *
      * @param className  the class name
-     * @param initialize whether the class must be initialized
-     * @return the class represented by {@code className} using the current 
-     *         thread's context class loader
+     * @param initialize  whether the class must be initialized
+     * @return the class represented by {@code className} using the current thread's context class loader
      * @throws ClassNotFoundException if the class is not found
      */
-    public static Class<?> getClass(String className, 
-                                    boolean initialize) 
-                                    throws ClassNotFoundException {
-
+    public static Class<?> getClass(String className, boolean initialize) throws ClassNotFoundException {
         ClassLoader contextCL = Thread.currentThread().getContextClassLoader();
-
-        ClassLoader loader = contextCL == null 
-                ? ClassUtils.class.getClassLoader() 
-                : contextCL;
-
+        ClassLoader loader = contextCL == null ? ClassUtils.class.getClassLoader() : contextCL;
         return getClass(loader, className, initialize);
     }
 
     // ----------------------------------------------------------------------
-
     /**
      * Converts a class name to a JLS style class name.
      *
-     * @param className the class name
+     * @param className  the class name
      * @return the converted name
      */
     private static String toCanonicalName(String className) {
@@ -595,8 +555,8 @@ public class ClassUtils {
     }
 
     /**
-     * Converts an array of {@code Object} in to an array of {@code Class} objects.
-     * If any of these objects is null, a null element will be inserted into the array.
+     * <p>Converts an array of {@code Object} in to an array of {@code Class} objects.
+     * If any of these objects is null, a null element will be inserted into the array.</p>
      *
      * <p>This method returns {@code null} for a {@code null} input array.</p>
      *
@@ -619,7 +579,6 @@ public class ClassUtils {
 
     // Delete
     //-----------------------------------------------------------------------
-
     /**
      * <p>Deletes all whitespaces from a String as defined by
      * {@link Character#isWhitespace(char)}.</p>
@@ -631,7 +590,7 @@ public class ClassUtils {
      * StringUtils.deleteWhitespace("   ab  c  ") = "abc"
      * </pre>
      *
-     * @param str the String to delete whitespace from, may be null
+     * @param str  the String to delete whitespace from, may be null
      * @return the String without whitespaces, {@code null} if null String input
      */
     public static String deleteWhitespace(String str) {
@@ -654,7 +613,6 @@ public class ClassUtils {
 
     // Empty checks
     //-----------------------------------------------------------------------
-
     /**
      * <p>Checks if a CharSequence is empty ("") or null.</p>
      *
@@ -670,7 +628,7 @@ public class ClassUtils {
      * It no longer trims the CharSequence.
      * That functionality is available in isBlank().</p>
      *
-     * @param cs the CharSequence to check, may be null
+     * @param cs  the CharSequence to check, may be null
      * @return {@code true} if the CharSequence is empty or null
      * @since 3.0 Changed signature from isEmpty(String) to isEmpty(CharSequence)
      */

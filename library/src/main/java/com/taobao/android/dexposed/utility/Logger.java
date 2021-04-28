@@ -6,6 +6,7 @@ import android.util.Log;
  * Created by weishu on 17/11/10.
  */
 public class Logger {
+
     private static final boolean DEBUG = Debug.DEBUG;
 
     public static final String preFix = "epic.";

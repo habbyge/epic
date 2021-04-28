@@ -42,5 +42,6 @@ void* dlsym_ex(void* handle, const char* symbol);
 int dlclose_ex(void* handle);
 const char* dlerror_ex();
 
-};
+} // extern "C"
+
 #endif // DEXPOSED_DLFCN_H

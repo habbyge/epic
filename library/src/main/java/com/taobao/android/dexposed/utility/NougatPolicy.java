@@ -12,11 +12,9 @@ public class NougatPolicy {
         static void i(String tag, String msg) {
             Log.i(tag, msg);
         }
-
         static void e(String tag, String msg) {
             Log.i(tag, msg);
         }
-
         static void e(String tag, String msg, Throwable e) {
             Log.i(tag, msg, e);
         }
@@ -41,13 +39,9 @@ public class NougatPolicy {
                 return dexOptStatus != PackageDexOptimizer.DEX_OPT_FAILED;
             */
 
-            final Method performDexOptMode = pm.getClass()
-                    .getDeclaredMethod("performDexOptMode",
+            final Method performDexOptMode = pm.getClass().getDeclaredMethod("performDexOptMode",
                     String.class, boolean.class, String.class, boolean.class);
-
-            boolean ret = (boolean) performDexOptMode.invoke(pm, 
-                    context.getPackageName(), false, "speed", true);
-                    
+            boolean ret = (boolean) performDexOptMode.invoke(pm, context.getPackageName(), false, "speed", true);
             long cost = SystemClock.elapsedRealtime() - t1;
             Log.i(TAG, "full Compile cost: " + cost + " result:" + ret);
             return ret;
@@ -61,10 +55,8 @@ public class NougatPolicy {
         boolean ret;
         try {
             Object pm = getPackageManagerBinderProxy();
-            final Method performDexOpt = pm.getClass().getDeclaredMethod(
-                    "performDexOpt", String.class,
+            final Method performDexOpt = pm.getClass().getDeclaredMethod("performDexOpt", String.class,
                     boolean.class, int.class, boolean.class);
-
             ret = (Boolean) performDexOpt.invoke(pm, context.getPackageName(), false, 2 /*install*/, true);
         } catch (Throwable e) {
             TraceLogger.e(TAG, "clear compile data failed", e);

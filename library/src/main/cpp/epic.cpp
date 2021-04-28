@@ -154,7 +154,8 @@
 
 #define JNIHOOK_CLASS "me/weishu/epic/art/EpicNative"
 
-jobject (*addWeakGloablReference)(JavaVM*, void*, void*) = nullptr;
+// 实现把 art::mirror::Object 转换为 jobject对象，这样我们可以通过JNI进而转化为Java对象
+jobject (*AddWeakGlobalReference)(JavaVM*, void*, void*) = nullptr;
 
 /**
  * Just-in-time compilation是一种动态编译，是在程序运行过程中才执行编译工作。相对于ART的核心技术
@@ -186,7 +187,13 @@ void* (*jit_load_)(bool*) = nullptr;
 void* jit_compiler_handle_ = nullptr; // 即: JitCompiler*，也就是jit执行器对象
 // 在 art/rumtime/jit/jit_compiler.cc 中，作用是 实时翻译运行过程中的热点函数，保存到 jitCodeCache 中
 bool (*jit_compile_method_)(void*, void*, void*, bool) = nullptr; // jit解释器编译函数
-typedef bool (*JIT_COMPILE_METHOD1)(void*, void*, void*, bool);
+
+// todo --------------------------------------------------------------------------------------
+void* (*JitCodeCache_GetCurrentRegion)(void*) = nullptr;
+
+typedef bool (*JIT_COMPILE_METHOD1)(void *, void *, void *, bool);
+typedef bool (*JIT_COMPILE_METHOD2)(void *, void *, void *, bool, bool); // Android 10
+typedef bool (*JIT_COMPILE_METHOD3)(void *, void *, void *, void *, bool, bool); // Android 11
 
 // todo  ------------------ Android 7.0/7.1/8.0/8.1/9/10 ------------------
 // extern "C" void* jit_load()
@@ -210,22 +217,23 @@ using jit_compiler_11 = nullptr;
 const char* CompileMethod_SYM_11 = "_ZN3art3jit11JitCompiler13CompileMethodEPNS_6ThreadEPNS0_15JitMemoryRegionEPNS_9ArtMethodEbb";
 using jit_compile_method_11 = bool (*)(void*, void*, void*, void*, bool, bool);
 
+// todo ------------------------------------------------------------------
+void (*jit_unload_)(void*) = nullptr;
 
-void (jit_unload_)(void*) = nullptr;
-
-class ScopedSuspendAll {
-};
+class ScopedSuspendAll {};
 
 void (*suspendAll)(ScopedSuspendAll*, char*) = nullptr;
 void (*resumeAll)(ScopedSuspendAll*) = nullptr;
 
-class ScopedJitSuspend {
-};
+class ScopedJitSuspend {};
 
 void (*startJit)(ScopedJitSuspend*) = nullptr;
 void (*stopJit)(ScopedJitSuspend*) = nullptr;
 
 void (*DisableMovingGc)(void*) = nullptr;
+
+void* (*JniIdManager_DecodeMethodId_)(void*, jlong) = nullptr;
+void* (*ClassLinker_MakeInitializedClassesVisiblyInitialized_)(void*, void*, bool) = nullptr;
 
 // 这里获取的art虚拟机中的当前Thread地址是错误的，不要使用 marked by habbyge.
 void* __self() {
@@ -251,9 +259,10 @@ void init_entries(JNIEnv* env) {
   // 获取Android系统 API 版本：adb shell getprop ro.build.version.sdk 我的机器上返回：29
   char api_level_str[5];
   __system_property_get("ro.build.version.sdk", api_level_str);
-
   api_level = atoi(api_level_str);
   LOGV("api level: %d", api_level);
+
+  ArtHelper::init(env, api_level);
 
   if (api_level < 23) { // 5.0/5.1
     // RTLD_LAZY: 在dlopen()返回前，对于动态库中存在的未定义的变量(如外部变量extern，也可
@@ -262,54 +271,95 @@ void init_entries(JNIEnv* env) {
     // 来，在dlopen会返回NULL，错误为: undefined symbol: xxxx.......
     // RTLD_GLOBAL: 它的含义是使得so库中的解析的定义变量在随后的其它的链接库中变得可以使用。
 
-    // Android L:
-    // art::JavaVMExt::AddWeakGlobalReference(art::Thread*, art::mirror::Object*)
+    // Android L, art::JavaVMExt::AddWeakGlobalReference(art::Thread*, art::mirror::Object*)
     void* handle = dlopen("libart.so", RTLD_LAZY | RTLD_GLOBAL);
     addWeakGloablReference = (jobject (*)(JavaVM*, void*, void*)) dlsym(handle,
         "_ZN3art9JavaVMExt22AddWeakGlobalReferenceEPNS_6ThreadEPNS_6mirror6ObjectE");
   } else if (api_level < 24) { // 6.0
-    // Android M:
-    // art::JavaVMExt::AddWeakGlobalRef(art::Thread*, art::mirror::Object*)
+    // Android M, art::JavaVMExt::AddWeakGlobalRef(art::Thread*, art::mirror::Object*)
     void* handle = dlopen("libart.so", RTLD_LAZY | RTLD_GLOBAL);
     addWeakGloablReference = (jobject (*)(JavaVM*, void*, void*)) dlsym(handle,
         "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadEPNS_6mirror6ObjectE")
-  } else if (api_level < 29) { // 7.0/7.1/8.0/8.1/9
-    // 从 Android N 开始(api >= 24, 7.0), Google disallow us use dlsym(google不允许使用dlsym()函数了)
-    // 使用解析so库(elf文件格式)的方式来解决：/proc/pid/maps得到该so库加载到进程地址空间中的基地址
+
+//  } else if (api_level < 29) { // 7.0/7.1/8.0/8.1/9
+//    // 从 Android N 开始(api >= 24, 7.0), Google disallow us use dlsym(google不允许使用dlsym()函数了)
+//    // 使用解析so库(elf文件格式)的方式来解决：/proc/pid/maps得到该so库加载到进程地址空间中的基地址
+//    void* handle = dlopen_ex("libart.so", RTLD_NOW);
+//    // libart-compiler.so 对应源码目录是：art/compiler/，例如：art/compiler/jit/jit_compiler.cc
+//    void* jit_lib = dlopen_ex("libart-compiler.so", RTLD_NOW);
+//
+//    LOGV("fake dlopen install: %p", handle);
+//
+//    // 注意 libart.so 中的符号都是安札C++符号命名规则
+//    const char* addWeakGloablReferenceSymbol =
+//        api_level <= 25 ? "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadEPNS_6mirror6ObjectE"
+//            : "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadENS_6ObjPtrINS_6mirror6ObjectEEE";
+//
+//    addWeakGloablReference = (jobject (*)(JavaVM*, void*, void*)) dlsym_ex(handle, addWeakGloablReferenceSymbol);
+//
+//    // 在libart.so中查找更好：
+//    // flame:/apex/com.android.art/lib64 $ readelf -s libart.so | grep 'jit_compile'
+//    //  2394: 00000000006ab610     8 OBJECT  GLOBAL PROTECTED 23 _ZN3art3jit3Jit13jit_compiler_E
+//    // 23991: 00000000006ab610     8 OBJECT  GLOBAL PROTECTED 23 _ZN3art3jit3Jit13jit_compiler_E
+//    jit_compile_method_ = (bool (*)(void*, void*, void*, bool)) dlsym_ex(jit_lib, "jit_compile_method");
+//
+//    // 在libart.so中查找更好：
+//    // readelf -s libart.so | grep 'jit_load'
+//    //  2163: 00000000006ab618     8 OBJECT  GLOBAL PROTECTED 23 _ZN3art3jit3Jit9jit_load_E
+//    // 24101: 00000000006ab618     8 OBJECT  GLOBAL PROTECTED 23 _ZN3art3jit3Jit9jit_load_E
+//    jit_load_ = reinterpret_cast<void* (*)(bool*)>(dlsym_ex(jit_lib, "jit_load"));
+//    bool generate_debug_info = false;
+//    jit_compiler_handle_ = (jit_load_)(&generate_debug_info);
+//    LOGV("jit compile_method: %p", jit_compile_method_);
+//
+//    suspendAll = reinterpret_cast<void (*)(ScopedSuspendAll*, char*)>(dlsym_ex(handle, "_ZN3art16ScopedSuspendAllC1EPKcb"));
+//    resumeAll = reinterpret_cast<void (*)(ScopedSuspendAll*)>(dlsym_ex(handle, "_ZN3art16ScopedSuspendAllD1Ev"));
+//  } else if (api_level == 29) { // 10.0
+//    // TODO: Android-10(Q、29) 同理上面
+//  } else { // 11 ~ master
+//    // TODO: api >= Android-11(30) 同理上面
+//  }
+  } else {
+    // Android N and O, Google disallow us use dlsym;
     void* handle = dlopen_ex("libart.so", RTLD_NOW);
-    // libart-compiler.so 对应源码目录是：art/compiler/，例如：art/compiler/jit/jit_compiler.cc
     void* jit_lib = dlopen_ex("libart-compiler.so", RTLD_NOW);
-
     LOGV("fake dlopen install: %p", handle);
+    const char* addWeakGloablReferenceSymbol = api_level <= 25
+        ? "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadEPNS_6mirror6ObjectE"
+        : "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadENS_6ObjPtrINS_6mirror6ObjectEEE";
 
-    // 注意 libart.so 中的符号都是安札C++符号命名规则
-    const char* addWeakGloablReferenceSymbol =
-        api_level <= 25 ? "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadEPNS_6mirror6ObjectE"
-            : "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadENS_6ObjPtrINS_6mirror6ObjectEEE";
+    addWeakGloablReference = (jobject (*)(JavaVM*, void*, void*)) dlsym_ex(
+        handle, addWeakGloablReferenceSymbol);
 
-    addWeakGloablReference = (jobject (*)(JavaVM*, void*, void*)) dlsym_ex(handle, addWeakGloablReferenceSymbol);
-
-    // 在libart.so中查找更好：
-    // flame:/apex/com.android.art/lib64 $ readelf -s libart.so | grep 'jit_compile'
-    //  2394: 00000000006ab610     8 OBJECT  GLOBAL PROTECTED 23 _ZN3art3jit3Jit13jit_compiler_E
-    // 23991: 00000000006ab610     8 OBJECT  GLOBAL PROTECTED 23 _ZN3art3jit3Jit13jit_compiler_E 
     jit_compile_method_ = (bool (*)(void*, void*, void*, bool)) dlsym_ex(jit_lib, "jit_compile_method");
-
-    // 在libart.so中查找更好：
-    // readelf -s libart.so | grep 'jit_load'
-    //  2163: 00000000006ab618     8 OBJECT  GLOBAL PROTECTED 23 _ZN3art3jit3Jit9jit_load_E
-    // 24101: 00000000006ab618     8 OBJECT  GLOBAL PROTECTED 23 _ZN3art3jit3Jit9jit_load_E
     jit_load_ = reinterpret_cast<void* (*)(bool*)>(dlsym_ex(jit_lib, "jit_load"));
     bool generate_debug_info = false;
     jit_compiler_handle_ = (jit_load_)(&generate_debug_info);
     LOGV("jit compile_method: %p", jit_compile_method_);
 
-    suspendAll = reinterpret_cast<void (*)(ScopedSuspendAll*, char*)>(dlsym_ex(handle, "_ZN3art16ScopedSuspendAllC1EPKcb"));
-    resumeAll = reinterpret_cast<void (*)(ScopedSuspendAll*)>(dlsym_ex(handle, "_ZN3art16ScopedSuspendAllD1Ev"));
-  } else if (api_level == 29) { // 10.0
-    // TODO: Android-10(Q、29) 同理上面
-  } else { // 11 ~ master
-    // TODO: api >= Android-11(30) 同理上面
+    suspendAll = reinterpret_cast<void (*)(ScopedSuspendAll*, char*)>(dlsym_ex(
+        handle, "_ZN3art16ScopedSuspendAllC1EPKcb"));
+    resumeAll = reinterpret_cast<void (*)(ScopedSuspendAll*)>(dlsym_ex(
+        handle, "_ZN3art16ScopedSuspendAllD1Ev"));
+
+    if (api_level >= 30) {
+      // Android R would not directly return ArtMethod address but an internal id
+      ClassLinker_MakeInitializedClassesVisiblyInitialized_ = reinterpret_cast<void* (*)(void*, void*, bool)>(
+          dlsym_ex(handle, "_ZN3art11ClassLinker40MakeInitializedClassesVisiblyInitializedEPNS_6ThreadEb"));
+
+      JniIdManager_DecodeMethodId_ = reinterpret_cast<void* (*)(void*, jlong)>(dlsym_ex(
+          handle, "_ZN3art3jni12JniIdManager14DecodeMethodIdEP10_jmethodID"));
+
+      jit_compile_method_ = (bool (*)(void*, void*, void*, bool)) dlsym_ex(jit_lib,
+          "_ZN3art3jit11JitCompiler13CompileMethodEPNS_6ThreadEPNS0_15JitMemoryRegionEPNS_9ArtMethodEbb");
+
+      JitCodeCache_GetCurrentRegion = (void* (*)(void*)) dlsym_ex(handle, "_ZN3art3jit12JitCodeCache16GetCurrentRegionEv");
+    }
+    // Disable this now.
+    // startJit = reinterpret_cast<void(*)(ScopedJitSuspend*)>(dlsym_ex(handle, "_ZN3art3jit16ScopedJitSuspendD1Ev"));
+    // stopJit = reinterpret_cast<void(*)(ScopedJitSuspend*)>(dlsym_ex(handle, "_ZN3art3jit16ScopedJitSuspendC1Ev"));
+
+    // DisableMovingGc = reinterpret_cast<void(*)(void*)>(dlsym_ex(handle, "_ZN3art2gc4Heap15DisableMovingGcEv"));
   }
 
   LOGV("addWeakGloablReference: %p", addWeakGloablReference);
@@ -327,15 +377,26 @@ void init_entries(JNIEnv* env) {
  * 这个 quick_code 入口就可以实现稳定 hook，到了 8.0 以上入口替换就稳多了.
  * @param self art::Thread 对象的 Native 地址
  */
-jboolean epic_compile(JNIEnv*, jclass, jobject, jlong) {
-  LOGV(("self from native peer: %p, from register: %p", reinterpret_cast<void*>(self), __self());
+jboolean epic_compile(JNIEnv* env, jclass, jobject method, jlong self) {
+  LOGV("self from native peer: %p, from register: %p", reinterpret_cast<void*>(self), __self());
 
   // Method在 Art虚拟机中的对象 ArtMethod 的基地址
   jlong art_method = (jlong) env->FromReflectedMethod(method);
+  if (art_method % 2 == 1) {
+    art_method = reinterpret_cast<jlong>(JniIdManager_DecodeMethodId_(ArtHelper::getJniIdManager(), art_method));
+  }
 
   // ArtMethod.compile是通过调用JIT的 jit_compile_method 来完成方法编译的，
   bool ret;
-  if (api_level >= 29) { // >= Andorid-10 ，这里 Android-11不适用了
+  if (api_level >= 30) {
+    void* current_region = JitCodeCache_GetCurrentRegion(ArtHelper::getJitCodeCache());
+    ret = ((JIT_COMPILE_METHOD3) jit_compile_method_)(jit_compiler_handle_,
+                                                      reinterpret_cast<void*>(self),
+                                                      reinterpret_cast<void*>(current_region),
+                                                      reinterpret_cast<void*>(art_method),
+                                                      false,
+                                                      false);
+  } else if (api_level >= 29) {
     ret = ((JIT_COMPILE_METHOD2) jit_compile_method_)(jit_compiler_handle_,
                                                       reinterpret_cast<void*>(art_method),
                                                       reinterpret_cast<void*>(self),
@@ -353,7 +414,7 @@ jboolean epic_compile(JNIEnv*, jclass, jobject, jlong) {
 jlong epic_suspendAll(JNIEnv*, jclass) {
   ScopedSuspendAll* scopedSuspendAll = (ScopedSuspendAll*) malloc(sizeof(ScopedSuspendAll));
   suspendAll(scopedSuspendAll, "stop_jit");
-  return reinterpret_cast<jlong>(scopedSuspendAll);
+  return reinterpret_cast<jlong >(scopedSuspendAll);
 }
 
 void epic_resumeAll(JNIEnv* env, jclass, jlong obj) {
@@ -373,17 +434,17 @@ void epic_startJit(JNIEnv*, jclass, jlong obj) {
 }
 
 void epic_disableMovingGc(JNIEnv* env, jclass, jint api) {
-  void* heap = getHeap(env, api);
+  void* heap = ArtHelper::getHeap();
   DisableMovingGc(heap);
 }
 
 jboolean epic_munprotect(JNIEnv* env, jclass, jlong addr, jlong len) {
-  long pagesize = sysconf(_SC_PAGESIZE); // 页大小
+  long pagesize = sysconf(_SC_PAGESIZE);
   unsigned alignment = (unsigned) ((unsigned long long) addr % pagesize);
   LOGV("munprotect page size: %d, alignment: %d", pagesize, alignment);
 
-  // 读/写/执行权限
-  int i = mprotect((void*) (addr - alignment), (size_t)(alignment + len), PROT_READ | PROT_WRITE | PROT_EXEC);
+  int i = mprotect((void*) (addr - alignment), (size_t)(alignment + len),
+                   PROT_READ | PROT_WRITE | PROT_EXEC);
   if (i == -1) {
     LOGV("mprotect failed: %s (%d)", strerror(errno), errno);
     return JNI_FALSE;
@@ -394,17 +455,28 @@ jboolean epic_munprotect(JNIEnv* env, jclass, jlong addr, jlong len) {
 jboolean epic_cacheflush(JNIEnv* env, jclass, jlong addr, jlong len) {
 #if defined(__arm__)
   int i = cacheflush(addr, addr + len, 0);
-  LOGV("arm cacheflush for, %ul", addr);
-  if (i == -1) {
+    LOGV("arm cacheflush for, %ul", addr);
+    if (i == -1) {
       LOGV("cache flush failed: %s (%d)", strerror(errno), errno);
       return JNI_FALSE;
-  }
+    }
 #elif defined(__aarch64__)
   char* begin = reinterpret_cast<char*>(addr);
   __builtin___clear_cache(begin, begin + len);
   LOGV("aarch64 __builtin___clear_cache, %p", (void*)begin);
 #endif
   return JNI_TRUE;
+}
+
+void epic_MakeInitializedClassVisibilyInitialized(JNIEnv* env, jclass, jlong self) {
+  if (api_level >= 30
+      && ClassLinker_MakeInitializedClassesVisiblyInitialized_
+      && ArtHelper::getClassLinker()) {
+
+    ClassLinker_MakeInitializedClassesVisiblyInitialized_(ArtHelper::getClassLinker(),
+                                                          reinterpret_cast<void*>(self),
+                                                          true);
+  }
 }
 
 void epic_memcpy(JNIEnv* env, jclass, jlong src, jlong dest, jint length) {
@@ -419,7 +491,7 @@ void epic_memcpy(JNIEnv* env, jclass, jlong src, jlong dest, jint length) {
  * 把 src 中的数据，存入 dest 地址中
  */
 void epic_memput(JNIEnv* env, jclass, jbyteArray src, jlong dest) {
-  jbyte* srcPnt = env->GetByteArrayElements(src, JNI_FALSE);
+  jbyte* srcPnt = env->GetByteArrayElements(src, 0);
   jsize length = env->GetArrayLength(src);
   unsigned char* destPnt = (unsigned char*) dest;
   for (int i = 0; i < length; ++i) {
@@ -434,8 +506,8 @@ jbyteArray epic_memget(JNIEnv* env, jclass, jlong src, jint length) {
   if (dest == NULL) {
     return NULL;
   }
-  uint8_t* destPnt = (unsigned char*) env->GetByteArrayElements(dest, JNI_FALSE);
-  uint8_t* srcPnt = (unsigned char*) src;
+  unsigned char* destPnt = (unsigned char*) env->GetByteArrayElements(dest, 0);
+  unsigned char* srcPnt = (unsigned char*) src;
   for (int i = 0; i < length; ++i) {
     destPnt[i] = srcPnt[i];
   }
@@ -445,13 +517,14 @@ jbyteArray epic_memget(JNIEnv* env, jclass, jlong src, jint length) {
 }
 
 jlong epic_mmap(JNIEnv* env, jclass, jint length) {
-  void* space = mmap(0, (size_t) length, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  void* space = mmap(0, (size_t) length, PROT_READ | PROT_WRITE | PROT_EXEC,
+                     MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+
   if (space == MAP_FAILED) {
     LOGV("mmap failed: %d", errno);
     return 0;
   }
-  return (jlong)
-  space;
+  return (jlong) space;
 }
 
 void epic_munmap(JNIEnv* env, jclass, jlong addr, jint length) {
@@ -465,8 +538,7 @@ jlong epic_malloc(JNIEnv* env, jclass, jint size) {
   size_t length = sizeof(void*) * size;
   void* ptr = malloc(length);
   LOGV("malloc :%d of memory at: %p", (int) length, ptr);
-  return (jlong)
-  ptr;
+  return (jlong) ptr;
 }
 
 /**
@@ -480,7 +552,8 @@ jobject epic_getobject(JNIEnv* env, jclass clazz, jlong self, jlong address) {
   JavaVM* vm;
   env->GetJavaVM(&vm);
   LOGV("java vm: %p, self: %p, address: %p", vm, (void*) self, (void*) address);
-  jobject object = addWeakGloablReference(vm, reinterpret_castcast<void*>(self), reinterpret_cast<void*>(address));
+  jobject object = addWeakGloablReference(vm, (void*) self, (void*) address);
+
   return object;
 }
 
@@ -543,9 +616,11 @@ jlong epic_getMethodAddress(JNIEnv* env, jclass clazz, jobject method) {
   // (这也是 jni 在 art虚拟机中的原理)
   // 我们重点关注的是art虚拟机，即：替换 nativeFuc 指针，这里返回的是 art_method，
   // 即该结构体的首地址
-  jmethodID methodId = env->FromReflectedMethod(method);
-  jlong art_method = reinterpret_cast<jlong>(methodId);
-  return art_method; // 返回 struct method首地址
+  jlong art_method = (jlong) env->FromReflectedMethod(method);
+  if (art_method % 2 == 1) {
+    art_method = reinterpret_cast<jlong>(JniIdManager_DecodeMethodId_(ArtHelper::getJniIdManager(), art_method));
+  }
+  return art_method;
 }
 
 jboolean epic_isGetObjectAvaliable(JNIEnv*, jclass) {
@@ -555,7 +630,10 @@ jboolean epic_isGetObjectAvaliable(JNIEnv*, jclass) {
 jlong pc, jlong
 sizeOfDirectJump,
 
-jboolean epic_activate(JNIEnv* env, jclass jclazz, jlong jumpToAddress, jlong sizeOfBridgeJump, jbyteArray code) {
+jboolean epic_activate(JNIEnv* env, jclass jclazz, jlong jumpToAddress,
+                       jlong pc, jlong sizeOfDirectJump,
+                       jlong sizeOfBridgeJump, jbyteArray code) {
+
   // fetch the array, we can not call this when thread suspend(may lead deadlock)
   // 获取Java层的字节数组：code，转换为JNI能用的字节数组 和 长度
   jbyte* srcPnt = env->GetByteArrayElements(code, JNI_FALSE);
@@ -568,8 +646,8 @@ jboolean epic_activate(JNIEnv* env, jclass jclazz, jlong jumpToAddress, jlong si
     // 1. modify the code mprotect
     // 2. modify the code
 
-    // Ideal, this two operation must be atomic. Below N, this is safe,
-    // because no one modify the code except ourselves;
+    // Ideal, this two operation must be atomic. Below N, this is safe, because no one
+    // modify the code except ourselves;
     // But in Android N, When the jit is working, between our step 1 and step 2,
     // if we modity the mprotect of the code, and planning to write the code,
     // the jit thread may modify the mprotect of the code meanwhile
@@ -582,7 +660,6 @@ jboolean epic_activate(JNIEnv* env, jclass jclazz, jlong jumpToAddress, jlong si
   jboolean result = epic_munprotect(env, jclazz, jumpToAddress, sizeOfDirectJump);
   if (result) {
     unsigned char* destPnt = (unsigned char*) jumpToAddress;
-
     for (int i = 0; i < length; ++i) {
       destPnt[i] = (unsigned char) srcPnt[i];
     }
@@ -645,6 +722,11 @@ static JNINativeMethod dexposedMethods[] = {
     (void*) epic_cacheflush
   },
   {
+    "MakeInitializedClassVisibilyInitialized",
+    "(J)V",
+    (void*) epic_MakeInitializedClassVisibilyInitialized
+  },
+  {
     "malloc",
     "(I)J",
     (void*) epic_malloc
@@ -699,7 +781,7 @@ static JNINativeMethod dexposedMethods[] = {
 
 static int registerNativeMethods(JNIEnv* env, const char* className, JNINativeMethod* gMethods, int numMethods) {
   jclass clazz = env->FindClass(className);
-  if (clazz == NULL) {
+  if (clazz == nullptr) {
     return JNI_FALSE;
   }
   if (env->RegisterNatives(clazz, gMethods, numMethods) < 0) {
@@ -708,10 +790,8 @@ static int registerNativeMethods(JNIEnv* env, const char* className, JNINativeMe
   return JNI_TRUE;
 }
 
-JNIEXPORT jint
-
-JNICALL JNI_OnLoad(JavaVM* vm, void* reserved) {
-  JNIEnv* env = NULL;
+JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* reserved) {
+  JNIEnv* env = nullptr;
 
   LOGV("JNI_OnLoad");
 

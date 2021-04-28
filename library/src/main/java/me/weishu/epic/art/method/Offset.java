@@ -28,9 +28,10 @@ import java.nio.ByteOrder;
 import me.weishu.epic.art.EpicNative;
 
 /**
- * The Offset of field in an ArtMethod.
+ * The Offset of field in an ArtMethod
  */
 class Offset {
+
     private static final String TAG = "Offset";
 
     /**
@@ -40,13 +41,11 @@ class Offset {
 
     /**
      * the offset of the access flag
-     * 方位标志(public/private/proteted等)在 struct _jmethodID 结构体中的偏移量
      */
     static Offset ART_ACCESS_FLAG_OFFSET;
 
     /**
      * the offset of a jni entry point
-     * 真实的 native function 入口点，即：函数地址
      */
     static Offset ART_JNI_ENTRY_OFFSET;
 
@@ -88,9 +87,7 @@ class Offset {
         long address = base + offset.offset;
         byte[] bytes = EpicNative.get(address, offset.length.width);
         if (offset.length == BitWidth.DWORD) {
-            return ByteBuffer.wrap(bytes)
-                    .order(ByteOrder.LITTLE_ENDIAN)
-                    .getInt() & 0xFFFFFFFFL;
+            return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getInt() & 0xFFFFFFFFL;
         } else {
             return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
         }
@@ -103,16 +100,10 @@ class Offset {
             if (value > 0xFFFFFFFFL) {
                 throw new IllegalStateException("overflow may occur");
             } else {
-                bytes = ByteBuffer.allocate(4)
-                        .order(ByteOrder.LITTLE_ENDIAN)
-                        .putInt((int) value)
-                        .array();
+                bytes = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt((int) value).array();
             }
         } else {
-            bytes = ByteBuffer.allocate(8)
-                    .order(ByteOrder.LITTLE_ENDIAN)
-                    .putLong(value)
-                    .array();
+            bytes = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putLong(value).array();
         }
         EpicNative.put(bytes, address);
     }
@@ -130,6 +121,7 @@ class Offset {
             ART_QUICK_CODE_OFFSET.setLength(Offset.BitWidth.QWORD);
             ART_JNI_ENTRY_OFFSET.setLength(BitWidth.QWORD);
             switch (apiLevel) {
+            case Build.VERSION_CODES.R:
             case Build.VERSION_CODES.Q:
             case Build.VERSION_CODES.P:
                 ART_QUICK_CODE_OFFSET.setOffset(32);
@@ -170,8 +162,7 @@ class Offset {
                 ART_ACCESS_FLAG_OFFSET.setOffset(28);
                 break;
             default:
-                throw new RuntimeException("API LEVEL: " + apiLevel 
-                        + " is not supported now : (");
+                throw new RuntimeException("API LEVEL: " + apiLevel + " is not supported now : (");
             }
         } else {
             ART_QUICK_CODE_OFFSET.setLength(Offset.BitWidth.DWORD);
@@ -217,8 +208,7 @@ class Offset {
                 ART_ACCESS_FLAG_OFFSET.setOffset(28);
                 break;
             default:
-                throw new RuntimeException("API LEVEL: " + apiLevel 
-                        + " is not supported now : (");
+                throw new RuntimeException("API LEVEL: " + apiLevel + " is not supported now : (");
             }
         }
         if (Debug.DEBUG) {

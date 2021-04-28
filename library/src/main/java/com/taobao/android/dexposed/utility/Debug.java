@@ -33,7 +33,6 @@ public final class Debug {
     public static final boolean DEBUG = BuildConfig.DEBUG;
 
     private static final String RELASE_WRAN_STRING = "none in release mode.";
-
     private Debug() {
     }
 
@@ -74,7 +73,6 @@ public final class Debug {
         }
         return sb.toString();
     }
-
     public static String hexdump(byte[] bytes, long start) {
         if (!DEBUG) {
             return RELASE_WRAN_STRING;

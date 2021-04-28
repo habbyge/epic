@@ -21,12 +21,13 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 public abstract class Platform {
+
     /*package*/ static Platform PLATFORM_INTERNAL;
 
     static {
         if (Runtime.is64Bit()) {
             PLATFORM_INTERNAL = new Platform64Bit();
-        } else {
+        }else {
             PLATFORM_INTERNAL = new Platform32Bit();
         }
     }
@@ -69,25 +70,17 @@ public abstract class Platform {
 
         @Override
         public long orderByteToLong(byte[] data) {
-            return ByteBuffer.wrap(data)
-                    .order(ByteOrder.LITTLE_ENDIAN)
-                    .getInt() & 0xFFFFFFFFL;
+            return ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN).getInt() & 0xFFFFFFFFL;
         }
 
         @Override
         public byte[] orderLongToByte(long serial, int length) {
-            return ByteBuffer.allocate(length)
-                    .order(ByteOrder.LITTLE_ENDIAN)
-                    .putInt((int) serial)
-                    .array();
+            return ByteBuffer.allocate(length).order(ByteOrder.LITTLE_ENDIAN).putInt((int) serial).array();
         }
 
         @Override
         public byte[] orderIntToByte(int serial) {
-            return ByteBuffer.allocate(4)
-                    .order(ByteOrder.LITTLE_ENDIAN)
-                    .putInt(serial)
-                    .array();
+            return ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(serial).array();
         }
 
         @Override
@@ -110,18 +103,12 @@ public abstract class Platform {
 
         @Override
         public byte[] orderLongToByte(long serial, int length) {
-            return ByteBuffer.allocate(length)
-                    .order(ByteOrder.LITTLE_ENDIAN)
-                    .putLong(serial)
-                    .array();
+            return ByteBuffer.allocate(length).order(ByteOrder.LITTLE_ENDIAN).putLong(serial).array();
         }
 
         @Override
         public byte[] orderIntToByte(int serial) {
-            return ByteBuffer.allocate(4)
-                    .order(ByteOrder.LITTLE_ENDIAN)
-                    .putInt(serial)
-                    .array();
+            return ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(serial).array();
         }
 
         @Override

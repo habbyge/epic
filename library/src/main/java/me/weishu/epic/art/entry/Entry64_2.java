@@ -488,7 +488,6 @@ public class Entry64_2 {
     }
 
     private static Map<Class<?>, String> bridgeMethodMap = new HashMap<>();
-
     static {
         Class<?>[] primitiveTypes = new Class[]{boolean.class, byte.class, char.class, short.class,
                 int.class, long.class, float.class, double.class};
@@ -518,7 +517,7 @@ public class Entry64_2 {
             method.setAccessible(true);
             return method;
         } catch (Throwable e) {
-            throw new RuntimeException("can not found bridge.", e);
+            throw new RuntimeException("can not found bridge." , e);
         }
     }
 }

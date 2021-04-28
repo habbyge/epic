@@ -54,13 +54,13 @@
 #endif
 
 #ifdef __LP64__
-#define Elf_Ehdr Elf64_Ehdr
-#define Elf_Shdr Elf64_Shdr
-#define Elf_Sym  Elf64_Sym
+  #define Elf_Ehdr Elf64_Ehdr
+  #define Elf_Shdr Elf64_Shdr
+  #define Elf_Sym  Elf64_Sym
 #else
-#define Elf_Ehdr Elf32_Ehdr
-#define Elf_Shdr Elf32_Shdr
-#define Elf_Sym  Elf32_Sym
+  #define Elf_Ehdr Elf32_Ehdr
+  #define Elf_Shdr Elf32_Shdr
+  #define Elf_Sym  Elf32_Sym
 #endif
 
 
@@ -103,7 +103,8 @@ static void* fake_dlopen_with_path(const char* libpath, int flags) {
   FILE* maps;
   char buff[256];
   ctx_t* ctx = 0;
-  off_t load_addr, size;
+  off_t load_addr;
+  off_t size;
   int i, fd = -1, found = 0;
   char* shoff;
 
@@ -156,7 +157,7 @@ static void* fake_dlopen_with_path(const char* libpath, int flags) {
   // 2. 将特殊文件进行匿名内存映射，为关联进程提供共享内存空间；
   // 3. 为无关联的进程间的Posix共享内存（SystemV的共享内存操作是shmget/shmat）
   // - 参数addr：
-  // 指向欲映射的内存起始地址，通常设为 NULL，代表让系统自动选定地址，映射成功后返回该地址。
+  // 指向欲映射的内存起始地址，通常设为 nullptr，代表让系统自动选定地址，映射成功后返回该地址。
   // - 参数length：
   // 代表将文件中多大的部分映射到内存。
   // - 参数prot：
@@ -252,7 +253,7 @@ static void* fake_dlopen_with_path(const char* libpath, int flags) {
   log_dbg("%s: ok, dynsym = %p, dynstr = %p", libpath, ctx->dynsym, ctx->dynstr);
   return ctx;
 
-  err_exit:
+err_exit:
   if (fd >= 0) {
     close(fd);
   }
@@ -268,13 +269,13 @@ static const char* const kSystemLibDir = "/system/lib64/";
 static const char* const kOdmLibDir = "/odm/lib64/";
 static const char* const kVendorLibDir = "/vendor/lib64/";
 static const char* const kApexLibDir = "/apex/com.android.runtime/lib64/"; // Android-10
-static const char* const kApexLibDir_11 = "/apex/com.android.art/lib64/"; // Android-11
+static const char* const kApexArtNsLibDir = "/apex/com.android.art/lib64/"; // Android-11
 #else
 static const char* const kSystemLibDir = "/system/lib/";
 static const char* const kOdmLibDir = "/odm/lib/";
 static const char* const kVendorLibDir = "/vendor/lib/";
 static const char* const kApexLibDir = "/apex/com.android.runtime/lib/"; // // Android-10
-static const char* const kApexLibDir_11 = "/apex/com.android.art/lib/"; // Android-11
+static const char* const kApexArtNsLibDir = "/apex/com.android.art/lib/"; // Android-11
 #endif
 
 /**
@@ -285,7 +286,7 @@ static void* fake_dlopen(const char* filename, int flags) {
     return fake_dlopen_with_path(filename, flags);
   } else { // so库的非完整路径
     char buf[512] = {0};
-    void* handle = NULL;
+    void* handle = nullptr;
     // sysmtem
     strcpy(buf, kSystemLibDir);
     strcat(buf, filename); // 生成so库完整路径
@@ -353,7 +354,7 @@ static void* fake_dlsym(void* handle, const char* name) {
 
 
 static const char* fake_dlerror() {
-  return NULL;
+  return nullptr;
 }
 
 // =============== implementation for compat ==========
@@ -363,7 +364,7 @@ static int get_sdk_level() {
   if (SDK_INT > 0) {
     return SDK_INT;
   }
-  char sdk[PROP_VALUE_MAX] = {0};;
+  char sdk[PROP_VALUE_MAX] = {0};
   __system_property_get("ro.build.version.sdk", sdk);
   SDK_INT = atoi(sdk);
   return SDK_INT;

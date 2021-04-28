@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package me.weishu.epic.art.method;
 
 import android.os.Build;
@@ -38,21 +39,20 @@ import me.weishu.epic.art.EpicNative;
  * Object stands for a Java Method, may be a constructor or a method.
  */
 public class ArtMethod {
+
     private static final String TAG = "ArtMethod";
 
     /**
-     * The address of the Art method. this is not the real memory address 
-     * of the java.lang.reflect.Method, But the address used by VM which 
-     * stand for the Java method. generally, it was the address of 
-     * art::mirror::ArtMethod. @{link #objectAddress}
+     * The address of the Art method. this is not the real memory address of the java.lang.reflect.Method
+     * But the address used by VM which stand for the Java method.
+     * generally, it was the address of art::mirror::ArtMethod. @{link #objectAddress}
      */
-    // artOrigin. objectAddress 保存的是原始的Java Method对象（Java Object）在内存中的地址.
-    private long address; // method对应的Art虚拟机中的地址
+    private long address;
 
     /**
      * the origin object if this is a constructor
      */
-    private Constructor<?> constructor;
+    private Constructor constructor;
 
     /**
      * the origin object if this is a method;
@@ -60,18 +60,17 @@ public class ArtMethod {
     private Method method;
 
     /**
-     * the origin ArtMethod if this method is a backup of someone, null when 
-     * this is not backup
+     * the origin ArtMethod if this method is a backup of someone, null when this is not backup
      */
     private ArtMethod origin;
 
     /**
-     * The size of ArtMethod, usually the java part of ArtMethod may not stand for 
-     * the whole one may be some native field is placed in the end of header.
+     * The size of ArtMethod, usually the java part of ArtMethod may not stand for the whole one
+     * may be some native field is placed in the end of header.
      */
     private static int artMethodSize = -1;
 
-    private ArtMethod(Constructor<?> constructor) {
+    private ArtMethod(Constructor constructor) {
         if (constructor == null) {
             throw new IllegalArgumentException("constructor can not be null");
         }
@@ -79,12 +78,16 @@ public class ArtMethod {
         init();
     }
 
-    private ArtMethod(Method method) {
+    private ArtMethod(Method method, long address) {
         if (method == null) {
             throw new IllegalArgumentException("method can not be null");
         }
         this.method = method;
-        init();
+        if (address != -1) {
+            this.address = address;
+        } else {
+            init();
+        }
     }
 
     private void init() {
@@ -96,12 +99,17 @@ public class ArtMethod {
     }
 
     public static ArtMethod of(Method method) {
-        return new ArtMethod(method);
+        return new ArtMethod(method, -1);
     }
 
-    public static ArtMethod of(Constructor<?> constructor) {
+    public static ArtMethod of(Method method, long address) {
+        return new ArtMethod(method, address);
+    }
+
+    public static ArtMethod of(Constructor constructor) {
         return new ArtMethod(constructor);
     }
+
 
     public ArtMethod backup() {
         try {
@@ -131,30 +139,26 @@ public class ArtMethod {
                     }
                     field.set(destArtMethod, field.get(srcArtMethod));
                 }
-
                 Method newMethod = Method.class.getConstructor(artMethodClass).newInstance(destArtMethod);
                 newMethod.setAccessible(true);
                 artMethod = ArtMethod.of(newMethod);
+
                 artMethod.setEntryPointFromQuickCompiledCode(getEntryPointFromQuickCompiledCode());
                 artMethod.setEntryPointFromJni(getEntryPointFromJni());
             } else {
                 Constructor<Method> constructor = Method.class.getDeclaredConstructor();
-
-                // we can't use constructor.setAccessible(true); because Google
-                // does not like it AccessibleObject.setAccessible(new
-                // AccessibleObject[]{constructor}, true);
+                // we can't use constructor.setAccessible(true); because Google does not like it
+                // AccessibleObject.setAccessible(new AccessibleObject[]{constructor}, true);
                 Field override = AccessibleObject.class.getDeclaredField(
-                        Build.VERSION.SDK_INT == Build.VERSION_CODES.M
-                        ? "flag" : "override");
-
+                        Build.VERSION.SDK_INT == Build.VERSION_CODES.M ? "flag" : "override");
                 override.setAccessible(true);
                 override.set(constructor, true);
 
-                Method constructorMethod = constructor.newInstance();
-                constructorMethod.setAccessible(true);
+                Method m = constructor.newInstance();
+                m.setAccessible(true);
                 for (Field field : abstractMethodClass.getDeclaredFields()) {
                     field.setAccessible(true);
-                    field.set(constructorMethod, field.get(executable));
+                    field.set(m, field.get(executable));
                 }
                 Field artMethodField = abstractMethodClass.getDeclaredField("artMethod");
                 artMethodField.setAccessible(true);
@@ -163,13 +167,20 @@ public class ArtMethod {
 
                 byte[] data = EpicNative.get(address, artMethodSize);
                 EpicNative.put(data, memoryAddress);
-                artMethodField.set(constructorMethod, memoryAddress);
-                artMethod = ArtMethod.of(constructorMethod);
+                artMethodField.set(m, memoryAddress);
+                // From Android R, getting method address may involve the jni_id_manager which uses
+                // ids mapping instead of directly returning the method address. During resolving the
+                // id->address mapping, it will assume the art method to be from the "methods_" array
+                // in class. However this address may be out of the range of the methods array. Thus
+                // it will cause a crash during using the method offset to resolve method array.
+                artMethod = ArtMethod.of(m, memoryAddress);
             }
             artMethod.makePrivate();
             artMethod.setAccessible(true);
             artMethod.origin = this; // save origin method.
             return artMethod;
+
+
         } catch (Throwable e) {
             Log.e(TAG, "backup method error:", e);
             throw new IllegalStateException("Cannot create backup method from :: " + getExecutable(), e);
@@ -189,7 +200,6 @@ public class ArtMethod {
 
     /**
      * make the constructor or method accessible
-     *
      * @param accessible accessible
      */
     public void setAccessible(boolean accessible) {
@@ -202,7 +212,6 @@ public class ArtMethod {
 
     /**
      * get the origin method's name
-     *
      * @return constructor name of method name
      */
     public String getName() {
@@ -224,7 +233,6 @@ public class ArtMethod {
     /**
      * Force compile the method to avoid interpreter mode.
      * This is only used above Android N
-     *
      * @return if compile success return true, otherwise false.
      */
     public boolean compile() {
@@ -237,17 +245,14 @@ public class ArtMethod {
 
     /**
      * invoke the origin method
-     *
      * @param receiver the receiver
-     * @param args     origin method/constructor's parameters
+     * @param args origin method/constructor's parameters
      * @return origin method's return value.
-     * @throws IllegalAccessException    throw if no access, impossible.
+     * @throws IllegalAccessException throw if no access, impossible.
      * @throws InvocationTargetException invoke target error.
-     * @throws InstantiationException when the c onstructor can not create instance.
+     * @throws InstantiationException throw when the constructor can not create instance.
      */
-    public Object invoke(Object receiver, Object... args) throws IllegalAccessException,
-                                                                 InvocationTargetException,
-                                                                 InstantiationException {
+    public Object invoke(Object receiver, Object... args) throws IllegalAccessException, InvocationTargetException, InstantiationException {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             if (origin != null) {
@@ -255,11 +260,8 @@ public class ArtMethod {
                 byte[] backupAddress = EpicNative.get(address, 4);
                 if (!Arrays.equals(currentAddress, backupAddress)) {
                     if (Debug.DEBUG) {
-                        Logger.i(TAG, "the address of java method was moved by gc, "
-                                + "backup it now! origin address: 0x"
-                                + Arrays.toString(currentAddress)
-                                + " , currentAddress: 0x"
-                                + Arrays.toString(backupAddress));
+                        Logger.i(TAG, "the address of java method was moved by gc, backup it now! origin address: 0x"
+                                + Arrays.toString(currentAddress) + " , currentAddress: 0x" + Arrays.toString(backupAddress));
                     }
                     EpicNative.put(currentAddress, address);
                     return invokeInternal(receiver, args);
@@ -272,9 +274,7 @@ public class ArtMethod {
         return invokeInternal(receiver, args);
     }
 
-    private Object invokeInternal(Object receiver, Object... args) throws IllegalAccessException,
-                                                                          InvocationTargetException,
-                                                                          InstantiationException {
+    private Object invokeInternal(Object receiver, Object... args) throws IllegalAccessException, InvocationTargetException, InstantiationException {
         if (constructor != null) {
             return constructor.newInstance(args);
         } else {
@@ -284,7 +284,6 @@ public class ArtMethod {
 
     /**
      * get the modifiers of origin method/constructor
-     *
      * @return the modifiers
      */
     public int getModifiers() {
@@ -297,7 +296,6 @@ public class ArtMethod {
 
     /**
      * get the parameter type of origin method/constructor
-     *
      * @return the parameter types.
      */
     public Class<?>[] getParameterTypes() {
@@ -310,7 +308,6 @@ public class ArtMethod {
 
     /**
      * get the return type of origin method/constructor
-     *
      * @return the return type, if it is a constructor, return Object.class
      */
     public Class<?> getReturnType() {
@@ -323,7 +320,6 @@ public class ArtMethod {
 
     /**
      * get the exception declared by the method/constructor
-     *
      * @return the array of declared exception.
      */
     public Class<?>[] getExceptionTypes() {
@@ -355,9 +351,7 @@ public class ArtMethod {
 
     /**
      * get the memory address of the inner constructor/method
-     *
-     * @return the method address, in general, 
-     *          it was the pointer of art::mirror::ArtMethod
+     * @return the method address, in general, it was the pointer of art::mirror::ArtMethod
      */
     public long getAddress() {
         return address;
@@ -365,7 +359,6 @@ public class ArtMethod {
 
     /**
      * get the unique identifier of the constructor/method
-     *
      * @return the method identifier
      */
     public String getIdentifier() {
@@ -384,10 +377,8 @@ public class ArtMethod {
     }
 
     /**
-     * the static method is lazy resolved, when not resolved, the entry point is 
-     * a trampoline(蹦床) of a bridge, we can not hook these entry. this method
-     * force the static method to be resolved.
-     * 保证 static 方法可以被 hook 到
+     * the static method is lazy resolved, when not resolved, the entry point is a trampoline of
+     * a bridge, we can not hook these entry. this method force the static method to be resolved.
      */
     public void ensureResolved() {
         if (!Modifier.isStatic(getModifiers())) {
@@ -400,12 +391,13 @@ public class ArtMethod {
             Logger.d(TAG, "ensure resolved");
         } catch (Exception ignored) {
             // we should never make a successful call.
+        } finally {
+            EpicNative.MakeInitializedClassVisibilyInitialized();
         }
     }
 
     /**
      * The entry point of the quick compiled code.
-     *
      * @return the entry point.
      */
     public long getEntryPointFromQuickCompiledCode() {
@@ -420,8 +412,7 @@ public class ArtMethod {
     }
 
     /**
-     * @return the access flags of the method/constructor, 
-     *          not only stand for the modifiers.
+     * @return the access flags of the method/constructor, not only stand for the modifiers.
      */
     public int getAccessFlags() {
         return (int) Offset.read(address, Offset.ART_ACCESS_FLAG_OFFSET);
@@ -440,9 +431,7 @@ public class ArtMethod {
     }
 
     /**
-     * The size of an art::mirror::ArtMethod, 
-     * we use two rule method to measure the size
-     *
+     * The size of an art::mirror::ArtMethod, we use two rule method to measure the size
      * @return the size
      */
     public static int getArtMethodSize() {
@@ -466,7 +455,6 @@ public class ArtMethod {
     private void rule2() {
         Log.i(TAG, "do not inline me!!");
     }
-
     public static long getQuickToInterpreterBridge() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
             return -1L;
@@ -482,8 +470,7 @@ public class ArtMethod {
 
     /**
      * search Offset in memory
-     *
-     * @param base  base address
+     * @param base base address
      * @param range search range
      * @param value search value
      * @return the first address of value if found
