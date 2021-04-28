@@ -175,8 +175,13 @@ jobject (*addWeakGloablReference)(JavaVM*, void*, void*) = nullptr;
  * step5, 经过前面的步骤，应用程序在后续启动时，就可以根据实际情况在AOT/JIT/Interpreter中选择最合适
  *        的执行方式了。
  */
- // 位于：art/compiler/jit/jit_compiler.cc
- // JitCompilerInterface* jit_load()
+// JitCompilerInterface* jit_load()
+// 在 art/runtime/jit/jit.cc 中实现: bool Jit::LoadCompilerLibrary(std::string* error_msg);
+// 从 libartd-compiler.so 中读取jit_load 符号:
+// JIT compiler:
+// void* Jit::jit_library_handle_ = nullptr;
+// JitCompilerInterface* Jit::jit_compiler_ = nullptr;
+// JitCompilerInterface* (*Jit::jit_load_)() = nullptr;
 void* (*jit_load_)(bool*) = nullptr;
 void* jit_compiler_handle_ = nullptr; // 即: JitCompiler*，也就是jit执行器对象
 // 在 art/rumtime/jit/jit_compiler.cc 中，作用是 实时翻译运行过程中的热点函数，保存到 jitCodeCache 中
@@ -277,17 +282,17 @@ void init_entries(JNIEnv* env) {
 
     LOGV("fake dlopen install: %p", handle);
 
-    // 注意 libart.so 中的符号都是加过密的
+    // 注意 libart.so 中的符号都是安札C++符号命名规则
     const char* addWeakGloablReferenceSymbol =
         api_level <= 25 ? "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadEPNS_6mirror6ObjectE"
-          : "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadENS_6ObjPtrINS_6mirror6ObjectEEE";
+            : "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadENS_6ObjPtrINS_6mirror6ObjectEEE";
 
     addWeakGloablReference = (jobject (*)(JavaVM*, void*, void*)) dlsym_ex(handle, addWeakGloablReferenceSymbol);
 
     // 在libart.so中查找更好：
     // flame:/apex/com.android.art/lib64 $ readelf -s libart.so | grep 'jit_compile'
     //  2394: 00000000006ab610     8 OBJECT  GLOBAL PROTECTED 23 _ZN3art3jit3Jit13jit_compiler_E
-    // 23991: 00000000006ab610     8 OBJECT  GLOBAL PROTECTED 23 _ZN3art3jit3Jit13jit_compiler_E
+    // 23991: 00000000006ab610     8 OBJECT  GLOBAL PROTECTED 23 _ZN3art3jit3Jit13jit_compiler_E 
     jit_compile_method_ = (bool (*)(void*, void*, void*, bool)) dlsym_ex(jit_lib, "jit_compile_method");
 
     // 在libart.so中查找更好：
@@ -377,8 +382,8 @@ jboolean epic_munprotect(JNIEnv* env, jclass, jlong addr, jlong len) {
   unsigned alignment = (unsigned) ((unsigned long long) addr % pagesize);
   LOGV("munprotect page size: %d, alignment: %d", pagesize, alignment);
 
-  int i = mprotect((void*) (addr - alignment), (size_t)(alignment + len),
-                   PROT_READ | PROT_WRITE | PROT_EXEC); // 读/写/执行权限
+  // 读/写/执行权限
+  int i = mprotect((void*) (addr - alignment), (size_t)(alignment + len), PROT_READ | PROT_WRITE | PROT_EXEC);
   if (i == -1) {
     LOGV("mprotect failed: %s (%d)", strerror(errno), errno);
     return JNI_FALSE;
@@ -440,11 +445,7 @@ jbyteArray epic_memget(JNIEnv* env, jclass, jlong src, jint length) {
 }
 
 jlong epic_mmap(JNIEnv* env, jclass, jint length) {
-  void* space = mmap(0, (size_t) length,
-                     PROT_READ | PROT_WRITE | PROT_EXEC,
-                     MAP_PRIVATE | MAP_ANONYMOUS,
-                     -1, 0);
-
+  void* space = mmap(0, (size_t) length, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
   if (space == MAP_FAILED) {
     LOGV("mmap failed: %d", errno);
     return 0;
@@ -554,11 +555,7 @@ jboolean epic_isGetObjectAvaliable(JNIEnv*, jclass) {
 jlong pc, jlong
 sizeOfDirectJump,
 
-jboolean epic_activate(JNIEnv* env, jclass jclazz,
-                       jlong jumpToAddress,
-                       jlong sizeOfBridgeJump,
-                       jbyteArray code) {
-
+jboolean epic_activate(JNIEnv* env, jclass jclazz, jlong jumpToAddress, jlong sizeOfBridgeJump, jbyteArray code) {
   // fetch the array, we can not call this when thread suspend(may lead deadlock)
   // 获取Java层的字节数组：code，转换为JNI能用的字节数组 和 长度
   jbyte* srcPnt = env->GetByteArrayElements(code, JNI_FALSE);
@@ -700,11 +697,7 @@ static JNINativeMethod dexposedMethods[] = {
   }
 };
 
-static int registerNativeMethods(JNIEnv* env,
-                                 const char* className,
-                                 JNINativeMethod* gMethods,
-                                 int numMethods) {
-
+static int registerNativeMethods(JNIEnv* env, const char* className, JNINativeMethod* gMethods, int numMethods) {
   jclass clazz = env->FindClass(className);
   if (clazz == NULL) {
     return JNI_FALSE;
