@@ -23,7 +23,7 @@ void* getHeap(JNIEnv* env, int api) {
   JavaVM* javaVM;
   env->GetJavaVM(&javaVM);
   JavaVMExt* javaVMExt = (JavaVMExt*) javaVM;
-
+  // 这获取runtime，不用这么干，我有更方便的方式在 dungfork 中实现
   void* runtime = javaVMExt->runtime;
   if (runtime == nullptr) {
     return nullptr;

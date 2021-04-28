@@ -178,25 +178,33 @@ jobject (*addWeakGloablReference)(JavaVM*, void*, void*) = nullptr;
  // 位于：art/compiler/jit/jit_compiler.cc
  // JitCompilerInterface* jit_load()
 void* (*jit_load_)(bool*) = nullptr;
-void* jit_compiler_handle_ = nullptr;
+void* jit_compiler_handle_ = nullptr; // 即: JitCompiler*，也就是jit执行器对象
 // 在 art/rumtime/jit/jit_compiler.cc 中，作用是 实时翻译运行过程中的热点函数，保存到 jitCodeCache 中
-bool (*jit_compile_method_)(void*, void*, void*, bool) = nullptr;
+bool (*jit_compile_method_)(void*, void*, void*, bool) = nullptr; // jit解释器编译函数
 typedef bool (*JIT_COMPILE_METHOD1)(void*, void*, void*, bool);
 
-// ------------------ Android Q ------------------
+// todo  ------------------ Android 7.0/7.1/8.0/8.1/9/10 ------------------
 // extern "C" void* jit_load()
-using jit_load_Q = void* (*)(); // 返回 JitCompiler* const jit_compiler
-void* jit_compiler_Q = nullptr;
+const char* jit_load_SYM_7_10 = "jit_load";
+using jit_load_7_10 = void* (*)(); // 返回 JitCompiler* const jit_compiler
+void* jit_compiler_7_10 = nullptr;
+const char* CompileMethod_SYM_7_10 = "jit_compile_method";
 // extern "C" bool jit_compile_method(void* handle, ArtMethod* method, Thread* self, bool baseline, bool osr);
-using jit_compile_method_Q = bool (*)(void*, void*, void*, bool, bool);
+using jit_compile_method_7_10 = bool (*)(void*, void*, void*, bool, bool);
 typedef bool (*JIT_COMPILE_METHOD2)(void*, void*, void*, bool, bool);
 
-// ------------------ Android R ------------------
+// todo ------------------ Android 11 ------------------
+// readelf -s libart-compiler.so | grep 'jit_compile_method'
 // extern "C" JitCompilerInterface* jit_load
-using jit_load_R = void* (*)();
-using jit_compiler_R = nullptr;
+const char* jit_load_SYM_11 = "jit_load";
+using jit_load_11 = void* (*)();
+using jit_compiler_11 = nullptr;
 // bool JitCompiler::CompileMethod(Thread* self, JitMemoryRegion* region, ArtMethod* method, bool baseline, bool osr)
-using jit_compile_method_R = bool (*)(void*, void*, void*, void*, bool, bool);
+// _ZN3art24ArtQuickJniCompileMethodERKNS_15CompilerOptionsEjjRKNS_7DexFileE
+// _ZNK3art18OptimizingCompiler16CanCompileMethodEjRKNS_7DexFileE
+const char* CompileMethod_SYM_11 = "_ZN3art3jit11JitCompiler13CompileMethodEPNS_6ThreadEPNS0_15JitMemoryRegionEPNS_9ArtMethodEbb";
+using jit_compile_method_11 = bool (*)(void*, void*, void*, void*, bool, bool);
+
 
 void (jit_unload_)(void*) = nullptr;
 
@@ -242,7 +250,7 @@ void init_entries(JNIEnv* env) {
   api_level = atoi(api_level_str);
   LOGV("api level: %d", api_level);
 
-  if (api_level < 23) {
+  if (api_level < 23) { // 5.0/5.1
     // RTLD_LAZY: 在dlopen()返回前，对于动态库中存在的未定义的变量(如外部变量extern，也可
     //  以是函数)不执行解析，就是不解析这个变量的地址。
     // RTLD_NOW：与上面不同，他需要在dlopen返回前，解析出每个未定义变量的地址，如果解析不出
@@ -254,16 +262,17 @@ void init_entries(JNIEnv* env) {
     void* handle = dlopen("libart.so", RTLD_LAZY | RTLD_GLOBAL);
     addWeakGloablReference = (jobject (*)(JavaVM*, void*, void*)) dlsym(handle,
         "_ZN3art9JavaVMExt22AddWeakGlobalReferenceEPNS_6ThreadEPNS_6mirror6ObjectE");
-  } else if (api_level < 24) {
+  } else if (api_level < 24) { // 6.0
     // Android M:
     // art::JavaVMExt::AddWeakGlobalRef(art::Thread*, art::mirror::Object*)
     void* handle = dlopen("libart.so", RTLD_LAZY | RTLD_GLOBAL);
     addWeakGloablReference = (jobject (*)(JavaVM*, void*, void*)) dlsym(handle,
         "_ZN3art9JavaVMExt16AddWeakGlobalRefEPNS_6ThreadEPNS_6mirror6ObjectE")
-  } else if (api_level < 29) { // TODO: <android-10> ......................................................
+  } else if (api_level < 29) { // 7.0/7.1/8.0/8.1/9
     // 从 Android N 开始(api >= 24, 7.0), Google disallow us use dlsym(google不允许使用dlsym()函数了)
     // 使用解析so库(elf文件格式)的方式来解决：/proc/pid/maps得到该so库加载到进程地址空间中的基地址
     void* handle = dlopen_ex("libart.so", RTLD_NOW);
+    // libart-compiler.so 对应源码目录是：art/compiler/，例如：art/compiler/jit/jit_compiler.cc
     void* jit_lib = dlopen_ex("libart-compiler.so", RTLD_NOW);
 
     LOGV("fake dlopen install: %p", handle);
@@ -292,9 +301,9 @@ void init_entries(JNIEnv* env) {
 
     suspendAll = reinterpret_cast<void (*)(ScopedSuspendAll*, char*)>(dlsym_ex(handle, "_ZN3art16ScopedSuspendAllC1EPKcb"));
     resumeAll = reinterpret_cast<void (*)(ScopedSuspendAll*)>(dlsym_ex(handle, "_ZN3art16ScopedSuspendAllD1Ev"));
-  } else if (api_level == 29) {
+  } else if (api_level == 29) { // 10.0
     // TODO: Android-10(Q、29) 同理上面
-  } else {
+  } else { // 11 ~ master
     // TODO: api >= Android-11(30) 同理上面
   }
 
